@@ -314,6 +314,48 @@
       transition: color .18s ease, text-shadow .18s ease;
     }
 
+    /* Double range slider style rules */
+    .double-range-wrap {
+      position: relative;
+      height: 24px;
+      margin-top: 6px;
+      margin-bottom: 2px;
+    }
+    .double-range-wrap input[type="range"] {
+      position: absolute;
+      width: 100%;
+      top: 0;
+      height: 24px;
+      margin: 0;
+      background: none;
+      pointer-events: none;
+      -webkit-appearance: none;
+      appearance: none;
+      z-index: 3;
+    }
+    .double-range-wrap input[type="range"]::-webkit-slider-thumb {
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: var(--navy);
+      cursor: pointer;
+      pointer-events: auto;
+      -webkit-appearance: none;
+      appearance: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      border: 2px solid white;
+    }
+    .double-range-wrap input[type="range"]::-moz-range-thumb {
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: var(--navy);
+      cursor: pointer;
+      pointer-events: auto;
+      border: 2px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+
     .kpi h2.is-rolling {
       color: var(--blue-600);
       text-shadow: 0 0 14px rgba(125, 211, 252, .72);
@@ -1968,14 +2010,21 @@
         </label>
         <label>
           <span style="display: flex; align-items: center; justify-content: space-between;">
-            <span>Min School Count</span>
-            <input id="minSchoolsVal" type="number" min="1" max="1000" value="1" style="width: 72px; height: 24px; padding: 2px 6px; border: 2px solid var(--line); border-radius: 8px; font-size: 11px; font-weight: 950; color: var(--navy); outline: none; text-align: center;" />
+            <span>School Count Range</span>
+            <span style="display: flex; align-items: center; gap: 4px;">
+              <input id="minSchoolsVal" type="number" min="1" max="1000" value="1" style="width: 48px; height: 20px; padding: 1px 3px; border: 2px solid var(--line); border-radius: 6px; font-size: 10px; font-weight: 950; color: var(--navy); outline: none; text-align: center;" />
+              <span style="font-size: 9px; font-weight: 950; color: var(--muted);">to</span>
+              <input id="maxSchoolsVal" type="number" min="1" max="1000" value="1000" style="width: 48px; height: 20px; padding: 1px 3px; border: 2px solid var(--line); border-radius: 6px; font-size: 10px; font-weight: 950; color: var(--navy); outline: none; text-align: center;" />
+            </span>
           </span>
-          <div style="display: flex; flex-direction: column; justify-content: center; height: 43px; gap: 2px;">
-            <input id="minSchoolsFilter" type="range" min="1" max="1000" value="1" style="width: 100%; accent-color: var(--navy); cursor: pointer; margin: 0;" />
-            <div id="sliderTicksContainer" style="position: relative; font-size: 9px; font-weight: 850; color: var(--muted); height: 16px; margin-top: 1px;">
-              <!-- Populated dynamically to prevent overlap and handle dynamic scale -->
-            </div>
+          <div class="double-range-wrap">
+            <div id="sliderTrack" style="position: absolute; left: 0; right: 0; height: 4px; top: 10px; background: var(--line); border-radius: 2px; z-index: 1;"></div>
+            <div id="sliderHighlight" style="position: absolute; left: 0%; right: 0%; height: 4px; top: 10px; background: var(--navy); border-radius: 2px; z-index: 2;"></div>
+            <input id="minSchoolsFilter" type="range" min="1" max="1000" value="1" style="z-index: 3;" />
+            <input id="maxSchoolsFilter" type="range" min="1" max="1000" value="1000" style="z-index: 4;" />
+          </div>
+          <div id="sliderTicksContainer" style="position: relative; font-size: 9px; font-weight: 850; color: var(--muted); height: 16px; margin-top: -2px;">
+            <!-- Populated dynamically -->
           </div>
         </label>
       </div>
@@ -2528,7 +2577,9 @@
       const search = document.getElementById("searchInput").value.trim().toLowerCase();
 
       const minSchoolsInput = document.getElementById("minSchoolsFilter");
+      const maxSchoolsInput = document.getElementById("maxSchoolsFilter");
       const minSchools = minSchoolsInput ? parseInt(minSchoolsInput.value, 10) || 1 : 1;
+      const maxSchools = maxSchoolsInput ? parseInt(maxSchoolsInput.value, 10) || 9999 : 9999;
 
       return rawRows.filter(row => {
         const matchesRegion = !regions.length || regions.includes(row.region);
@@ -2537,8 +2588,8 @@
         const matchesClassification = !classifications.length || classifications.includes(row.locality_classification);
         const haystack = [row.sdo, row.region, row.size, row.locality, row.locality_classification].join(" ").toLowerCase();
         const matchesSearch = !search || haystack.includes(search);
-        const matchesMinSchools = (row.school_count_num || 0) >= minSchools;
-        return matchesRegion && matchesSize && matchesLocality && matchesClassification && matchesSearch && matchesMinSchools;
+        const matchesSchoolRange = (row.school_count_num || 0) >= minSchools && (row.school_count_num || 0) <= maxSchools;
+        return matchesRegion && matchesSize && matchesLocality && matchesClassification && matchesSearch && matchesSchoolRange;
       });
     }
 
@@ -2699,20 +2750,31 @@
       populateSelect("localityFilter", [...new Set(rawRows.map(row => row.locality))], "All Localities");
       populateSelect("classificationFilter", [...new Set(rawRows.map(row => row.locality_classification))], "All Classifications");
 
-      // Set dynamic max for min school count slider
+      // Set dynamic max for min/max school count range slider
       const minSchoolsInput = document.getElementById("minSchoolsFilter");
+      const maxSchoolsInput = document.getElementById("maxSchoolsFilter");
       const minSchoolsVal = document.getElementById("minSchoolsVal");
+      const maxSchoolsVal = document.getElementById("maxSchoolsVal");
       const ticksContainer = document.getElementById("sliderTicksContainer");
-      if (minSchoolsInput && rawRows.length) {
+      if (minSchoolsInput && maxSchoolsInput && rawRows.length) {
         const maxSchools = Math.max(...rawRows.map(row => row.school_count_num || 0));
         const sliderMax = Math.max(1000, maxSchools);
         
         minSchoolsInput.max = sliderMax;
         minSchoolsInput.value = 1;
+        maxSchoolsInput.max = sliderMax;
+        maxSchoolsInput.value = sliderMax;
+        
         if (minSchoolsVal) {
           minSchoolsVal.max = sliderMax;
           minSchoolsVal.value = 1;
         }
+        if (maxSchoolsVal) {
+          maxSchoolsVal.max = sliderMax;
+          maxSchoolsVal.value = sliderMax;
+        }
+        
+        updateSliderHighlight();
         
         if (ticksContainer) {
           ticksContainer.innerHTML = "";
@@ -2737,12 +2799,20 @@
             container.style.flexDirection = "column";
             container.style.alignItems = "center";
             container.style.cursor = "pointer";
-            container.title = `Click to set to ${value}`;
+            container.title = `Click to set nearest limit to ${value}`;
             
             container.addEventListener("click", () => {
-              if (minSchoolsInput) {
-                minSchoolsInput.value = value;
-                if (minSchoolsVal) minSchoolsVal.value = value;
+              if (minSchoolsInput && maxSchoolsInput) {
+                const minVal = parseInt(minSchoolsInput.value, 10) || 1;
+                const maxVal = parseInt(maxSchoolsInput.value, 10) || sliderMax;
+                if (Math.abs(value - minVal) < Math.abs(value - maxVal)) {
+                  minSchoolsInput.value = value;
+                  if (minSchoolsVal) minSchoolsVal.value = value;
+                } else {
+                  maxSchoolsInput.value = value;
+                  if (maxSchoolsVal) maxSchoolsVal.value = value;
+                }
+                updateSliderHighlight();
                 pressurePage = 1;
                 renderDashboard();
               }
@@ -4089,22 +4159,64 @@
     document.getElementById("searchInput").addEventListener("input", renderDashboard);
 
     const minSchoolsInput = document.getElementById("minSchoolsFilter");
+    const maxSchoolsInput = document.getElementById("maxSchoolsFilter");
     const minSchoolsVal = document.getElementById("minSchoolsVal");
+    const maxSchoolsVal = document.getElementById("maxSchoolsVal");
+
+    function updateSliderHighlight() {
+      if (minSchoolsInput && maxSchoolsInput) {
+        const highlight = document.getElementById("sliderHighlight");
+        if (highlight) {
+          const sliderMax = parseInt(minSchoolsInput.max, 10) || 1000;
+          const minVal = parseInt(minSchoolsInput.value, 10) || 1;
+          const maxVal = parseInt(maxSchoolsInput.value, 10) || sliderMax;
+          const leftPct = ((minVal - 1) / (sliderMax - 1)) * 100;
+          const rightPct = 100 - (((maxVal - 1) / (sliderMax - 1)) * 100);
+          highlight.style.left = leftPct + "%";
+          highlight.style.right = rightPct + "%";
+        }
+      }
+    }
 
     if (minSchoolsInput) {
       minSchoolsInput.addEventListener("input", event => {
         let val = parseInt(event.target.value, 10) || 1;
+        const maxVal = parseInt(maxSchoolsInput.value, 10) || 1000;
+        
         // Snap dragging values to the nearest multiple of 10 (except at bounds)
-        if (val > 1) {
-          const maxVal = parseInt(minSchoolsInput.max, 10) || 1000;
-          if (val < maxVal) {
-            val = Math.round(val / 10) * 10;
-            if (val < 1) val = 1;
-            if (val > maxVal) val = maxVal;
-          }
+        if (val > 1 && val < parseInt(minSchoolsInput.max, 10)) {
+          val = Math.round(val / 10) * 10;
         }
+        
+        if (val > maxVal) {
+          val = maxVal;
+        }
+        
         event.target.value = val;
         if (minSchoolsVal) minSchoolsVal.value = val;
+        updateSliderHighlight();
+        pressurePage = 1;
+        renderDashboard();
+      });
+    }
+
+    if (maxSchoolsInput) {
+      maxSchoolsInput.addEventListener("input", event => {
+        let val = parseInt(event.target.value, 10) || 1;
+        const minVal = parseInt(minSchoolsInput.value, 10) || 1;
+        
+        // Snap dragging values to the nearest multiple of 10 (except at bounds)
+        if (val > 1 && val < parseInt(maxSchoolsInput.max, 10)) {
+          val = Math.round(val / 10) * 10;
+        }
+        
+        if (val < minVal) {
+          val = minVal;
+        }
+        
+        event.target.value = val;
+        if (maxSchoolsVal) maxSchoolsVal.value = val;
+        updateSliderHighlight();
         pressurePage = 1;
         renderDashboard();
       });
@@ -4113,7 +4225,7 @@
     if (minSchoolsVal) {
       minSchoolsVal.addEventListener("input", event => {
         let val = parseInt(event.target.value, 10) || 1;
-        const maxVal = minSchoolsInput ? parseInt(minSchoolsInput.max, 10) || 100 : 100;
+        const maxVal = parseInt(maxSchoolsInput.value, 10) || 1000;
         if (val < 1) val = 1;
         if (val > maxVal) val = maxVal;
         
@@ -4123,6 +4235,27 @@
         }
         
         if (minSchoolsInput) minSchoolsInput.value = val;
+        updateSliderHighlight();
+        pressurePage = 1;
+        renderDashboard();
+      });
+    }
+
+    if (maxSchoolsVal) {
+      maxSchoolsVal.addEventListener("input", event => {
+        let val = parseInt(event.target.value, 10) || 1;
+        const minVal = parseInt(minSchoolsInput.value, 10) || 1;
+        const limitMax = parseInt(maxSchoolsInput.max, 10) || 1000;
+        if (val < minVal) val = minVal;
+        if (val > limitMax) val = limitMax;
+        
+        // Temporarily override input value if out of bounds to guide user
+        if (event.target.value !== "" && parseInt(event.target.value, 10) !== val) {
+          event.target.value = val;
+        }
+        
+        if (maxSchoolsInput) maxSchoolsInput.value = val;
+        updateSliderHighlight();
         pressurePage = 1;
         renderDashboard();
       });
@@ -4139,6 +4272,9 @@
       document.getElementById("searchInput").value = "";
       if (minSchoolsInput) minSchoolsInput.value = 1;
       if (minSchoolsVal) minSchoolsVal.value = 1;
+      if (maxSchoolsInput) maxSchoolsInput.value = maxSchoolsInput.max;
+      if (maxSchoolsVal) maxSchoolsVal.value = maxSchoolsInput.max;
+      updateSliderHighlight();
       tableFilters = {};
       sortState = { column: "region", direction: "asc" };
       pressureSortState = { column: "additional_districts_needed", direction: "desc" };
