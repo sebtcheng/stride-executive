@@ -1742,6 +1742,91 @@
       max-width:82%;
     }
   }
+
+  /* Presentation Switcher styling */
+  .fab-switch-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue-600), var(--navy));
+    color: white;
+    border: 2px solid var(--line);
+    box-shadow: 0 8px 24px rgba(8, 49, 95, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .fab-switch-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 28px rgba(8, 49, 95, 0.45);
+    background: linear-gradient(135deg, var(--blue), var(--navy));
+  }
+  .fab-switch-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+  .ppt-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    display: none;
+    opacity: 0;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease;
+    padding: 40px;
+  }
+  .ppt-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .ppt-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 1400px;
+    max-height: 800px;
+    background: #000;
+    border-radius: 18px;
+    border: 3px solid var(--line);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+  .ppt-iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .ppt-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(15, 23, 42, 0.6);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background 0.2s ease, transform 0.2s ease;
+    z-index: 10;
+  }
+  .ppt-close-btn:hover {
+    background: rgba(239, 68, 68, 0.9);
+    transform: scale(1.1);
+  }
 </style>
 </head>
 <body>
@@ -1806,10 +1891,18 @@
       <button id="clearFilters" type="button">Clear</button>
     </div>
 
-    <label style="margin-top:10px;">
-      <span>Search SDO</span>
-      <input id="searchInput" class="search" type="search" placeholder="Search by SDO name, region, size, or locality…" />
-    </label>
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 10px;">
+      <label>
+        <span>Search SDO</span>
+        <input id="searchInput" class="search" type="search" placeholder="Search by SDO name, region, size, or locality…" />
+      </label>
+      <label>
+        <span>Min School Count: <span id="minSchoolsVal" style="color: var(--blue-600); font-weight: 950;">1</span></span>
+        <div style="display: flex; align-items: center; height: 43px;">
+          <input id="minSchoolsFilter" type="range" min="1" max="100" value="1" style="width: 100%; accent-color: var(--navy); cursor: pointer;" />
+        </div>
+      </label>
+    </div>
 
     <input id="fileInput" type="file" accept=".csv,text/csv" style="display:none;" />
   </section>
@@ -2345,6 +2438,9 @@
     const classifications = getSelectedValues("classificationFilter");
     const search = document.getElementById("searchInput").value.trim().toLowerCase();
 
+    const minSchoolsInput = document.getElementById("minSchoolsFilter");
+    const minSchools = minSchoolsInput ? parseInt(minSchoolsInput.value, 10) || 1 : 1;
+
     return rawRows.filter(row => {
       const matchesRegion = !regions.length || regions.includes(row.region);
       const matchesSize = !sizes.length || sizes.includes(row.size);
@@ -2352,7 +2448,8 @@
       const matchesClassification = !classifications.length || classifications.includes(row.locality_classification);
       const haystack = [row.sdo, row.region, row.size, row.locality, row.locality_classification].join(" ").toLowerCase();
       const matchesSearch = !search || haystack.includes(search);
-      return matchesRegion && matchesSize && matchesLocality && matchesClassification && matchesSearch;
+      const matchesMinSchools = (row.school_count_num || 0) >= minSchools;
+      return matchesRegion && matchesSize && matchesLocality && matchesClassification && matchesSearch && matchesMinSchools;
     });
   }
 
@@ -2512,6 +2609,17 @@
     populateSelect("sizeFilter", [...new Set(rawRows.map(row => row.size))], "All Sizes");
     populateSelect("localityFilter", [...new Set(rawRows.map(row => row.locality))], "All Localities");
     populateSelect("classificationFilter", [...new Set(rawRows.map(row => row.locality_classification))], "All Classifications");
+    
+    // Set dynamic max for min school count slider
+    const minSchoolsInput = document.getElementById("minSchoolsFilter");
+    const minSchoolsVal = document.getElementById("minSchoolsVal");
+    if (minSchoolsInput && rawRows.length) {
+      const maxSchools = Math.max(...rawRows.map(row => row.school_count_num || 0));
+      minSchoolsInput.max = maxSchools;
+      minSchoolsInput.value = 1;
+      if (minSchoolsVal) minSchoolsVal.textContent = "1";
+    }
+
     updateDistributionOptions();
   }
 
@@ -3762,6 +3870,16 @@
 
   document.getElementById("searchInput").addEventListener("input", renderDashboard);
 
+  const minSchoolsInput = document.getElementById("minSchoolsFilter");
+  if (minSchoolsInput) {
+    minSchoolsInput.addEventListener("input", event => {
+      const valSpan = document.getElementById("minSchoolsVal");
+      if (valSpan) valSpan.textContent = event.target.value;
+      pressurePage = 1;
+      renderDashboard();
+    });
+  }
+
   document.getElementById("clearFilters").addEventListener("click", () => {
     setOnlyAllSelected("regionFilter");
     setOnlyAllSelected("sizeFilter");
@@ -3770,6 +3888,11 @@
     document.getElementById("distributionBy").value = "size";
     document.getElementById("metricBy").value = "row_count";
     document.getElementById("searchInput").value = "";
+    if (minSchoolsInput) {
+      minSchoolsInput.value = 1;
+      const valSpan = document.getElementById("minSchoolsVal");
+      if (valSpan) valSpan.textContent = "1";
+    }
     tableFilters = {};
     sortState = { column: "region", direction: "asc" };
     pressureSortState = { column: "additional_districts_needed", direction: "desc" };
@@ -3800,5 +3923,64 @@
 
   loadCSV();
 </script>
+
+<!-- Floating Switch Button -->
+<button id="pptToggleBtn" class="fab-switch-btn" title="Switch View">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m16 3 4 4-4 4"></path>
+    <path d="M20 7H4"></path>
+    <path d="m8 21-4-4 4-4"></path>
+    <path d="M4 17h16"></path>
+  </svg>
+</button>
+
+<!-- Presentation Overlay -->
+<div id="pptOverlay" class="ppt-overlay">
+  <div class="ppt-container">
+    <button id="pptCloseBtn" class="ppt-close-btn" title="Back to Dashboard">✕</button>
+    <div style="position: absolute; top: 16px; left: 16px; z-index: 10; display: flex; gap: 10px;">
+      <a href="https://depedph-my.sharepoint.com/:p:/g/personal/jeric_llanto_deped_gov_ph/IQAVLgWfcQUTS7SJijQLdUCSAR96Tf2V06il9BWK_kLt_Zs?e=uUkxml" 
+         target="_blank" 
+         style="background: rgba(15, 23, 42, 0.75); color: white; padding: 8px 16px; border-radius: 99px; text-decoration: none; font-size: 12px; font-weight: 800; border: 1px solid rgba(255, 255, 255, 0.2); display: flex; align-items: center; gap: 6px; transition: background 0.2s;"
+         onmouseover="this.style.background='var(--blue-600)'" 
+         onmouseout="this.style.background='rgba(15, 23, 42, 0.75)'">
+        ↗ Open in New Tab
+      </a>
+    </div>
+    <iframe 
+      id="pptIframe" 
+      class="ppt-iframe" 
+      src="https://depedph-my.sharepoint.com/:p:/g/personal/jeric_llanto_deped_gov_ph/IQAVLgWfcQUTS7SJijQLdUCSAR96Tf2V06il9BWK_kLt_Zs?action=embedview" 
+      allowfullscreen="true">
+    </iframe>
+  </div>
+</div>
+
+<script>
+  // Presentation Switcher Logic (executed after elements are defined)
+  const pptToggleBtn = document.getElementById("pptToggleBtn");
+  const pptCloseBtn = document.getElementById("pptCloseBtn");
+  const pptOverlay = document.getElementById("pptOverlay");
+
+  function togglePPT() {
+    if (pptOverlay.classList.contains("active")) {
+      pptOverlay.style.opacity = "0";
+      setTimeout(() => {
+        pptOverlay.classList.remove("active");
+      }, 300);
+    } else {
+      pptOverlay.classList.add("active");
+      // Trigger reflow
+      pptOverlay.offsetHeight;
+      pptOverlay.style.opacity = "1";
+    }
+  }
+
+  if (pptToggleBtn && pptCloseBtn && pptOverlay) {
+    pptToggleBtn.addEventListener("click", togglePPT);
+    pptCloseBtn.addEventListener("click", togglePPT);
+  }
+</script>
+
 </body>
 </html>
