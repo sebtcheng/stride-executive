@@ -1973,13 +1973,8 @@
           </span>
           <div style="display: flex; flex-direction: column; justify-content: center; height: 43px; gap: 2px;">
             <input id="minSchoolsFilter" type="range" min="1" max="1000" value="1" style="width: 100%; accent-color: var(--navy); cursor: pointer; margin: 0;" />
-            <div style="position: relative; font-size: 9px; font-weight: 850; color: var(--muted); height: 16px; margin-top: 1px;">
-              <span style="position: absolute; left: 0;">1</span>
-              <span id="maxSchoolsVal" style="position: absolute; left: 74%; transform: translateX(-50%); color: var(--amber); font-weight: 950; white-space: nowrap; display: flex; flex-direction: column; align-items: center; line-height: 1;">
-                <span style="font-size: 7px; margin-bottom: -1px; line-height: 1;">▼</span>
-                <span id="maxSchoolsValText">740</span>
-              </span>
-              <span style="position: absolute; right: 0;">1000</span>
+            <div id="sliderTicksContainer" style="position: relative; font-size: 9px; font-weight: 850; color: var(--muted); height: 16px; margin-top: 1px;">
+              <!-- Populated dynamically to prevent overlap and handle dynamic scale -->
             </div>
           </div>
         </label>
@@ -2707,22 +2702,92 @@
       // Set dynamic max for min school count slider
       const minSchoolsInput = document.getElementById("minSchoolsFilter");
       const minSchoolsVal = document.getElementById("minSchoolsVal");
-      const maxSchoolsLabel = document.getElementById("maxSchoolsVal");
-      const maxSchoolsText = document.getElementById("maxSchoolsValText");
+      const ticksContainer = document.getElementById("sliderTicksContainer");
       if (minSchoolsInput && rawRows.length) {
         const maxSchools = Math.max(...rawRows.map(row => row.school_count_num || 0));
-        minSchoolsInput.max = 1000;
+        const sliderMax = Math.max(1000, maxSchools);
+        
+        minSchoolsInput.max = sliderMax;
         minSchoolsInput.value = 1;
         if (minSchoolsVal) {
-          minSchoolsVal.max = 1000;
+          minSchoolsVal.max = sliderMax;
           minSchoolsVal.value = 1;
         }
-        if (maxSchoolsLabel) {
-          const pct = Math.min(Math.max((maxSchools / 1000) * 100, 0), 100);
-          maxSchoolsLabel.style.left = pct + "%";
-        }
-        if (maxSchoolsText) {
-          maxSchoolsText.textContent = maxSchools;
+        
+        if (ticksContainer) {
+          ticksContainer.innerHTML = "";
+          
+          // Left boundary
+          const minSpan = document.createElement("span");
+          minSpan.style.position = "absolute";
+          minSpan.style.left = "0";
+          minSpan.textContent = "1";
+          ticksContainer.appendChild(minSpan);
+          
+          // Pointer for 740
+          if (sliderMax > 740) {
+            const pct740 = (740 / sliderMax) * 100;
+            const span740 = document.createElement("span");
+            span740.style.position = "absolute";
+            span740.style.left = pct740 + "%";
+            span740.style.transform = "translateX(-50%)";
+            span740.style.color = "var(--amber)";
+            span740.style.fontWeight = "950";
+            span740.style.whiteSpace = "nowrap";
+            span740.style.display = "flex";
+            span740.style.flexDirection = "column";
+            span740.style.alignItems = "center";
+            span740.style.lineHeight = "1";
+            
+            const arrow = document.createElement("span");
+            arrow.style.fontSize = "7px";
+            arrow.style.marginBottom = "-1px";
+            arrow.style.lineHeight = "1";
+            arrow.textContent = "▼";
+            span740.appendChild(arrow);
+            
+            const txt = document.createElement("span");
+            txt.textContent = "740";
+            span740.appendChild(txt);
+            ticksContainer.appendChild(span740);
+          }
+          
+          // Pointer for 1000 (if it's not the right boundary)
+          if (sliderMax > 1000) {
+            const pct1000 = (1000 / sliderMax) * 100;
+            const span1000 = document.createElement("span");
+            span1000.style.position = "absolute";
+            span1000.style.left = pct1000 + "%";
+            span1000.style.transform = "translateX(-50%)";
+            span1000.style.color = "var(--navy)";
+            span1000.style.fontWeight = "950";
+            span1000.style.whiteSpace = "nowrap";
+            span1000.style.display = "flex";
+            span1000.style.flexDirection = "column";
+            span1000.style.alignItems = "center";
+            span1000.style.lineHeight = "1";
+            
+            const arrow = document.createElement("span");
+            arrow.style.fontSize = "7px";
+            arrow.style.marginBottom = "-1px";
+            arrow.style.lineHeight = "1";
+            arrow.textContent = "▼";
+            span1000.appendChild(arrow);
+            
+            const txt = document.createElement("span");
+            txt.textContent = "1000";
+            span1000.appendChild(txt);
+            ticksContainer.appendChild(span1000);
+          }
+          
+          // Right boundary (the dynamic sliderMax)
+          const maxSpan = document.createElement("span");
+          maxSpan.style.position = "absolute";
+          maxSpan.style.right = "0";
+          maxSpan.style.color = sliderMax > 1000 ? "#dc2626" : "var(--muted)";
+          maxSpan.style.fontWeight = sliderMax > 1000 ? "950" : "850";
+          maxSpan.textContent = sliderMax;
+          ticksContainer.appendChild(maxSpan);
         }
       }
 
