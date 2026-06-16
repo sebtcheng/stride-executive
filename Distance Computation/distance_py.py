@@ -45,7 +45,6 @@ def add_extreme_outlier_columns(
     min_schools_per_division=5,
     extreme_percentile=99,
     nearby_radius_km=5,
-    nearby_min_schools=2,
 ):
     """
     Adds outlier columns based on linear_distance_km within each division.
@@ -53,14 +52,12 @@ def add_extreme_outlier_columns(
     Main rule:
     - A school is an extreme outlier if its linear_distance_km is in the 99th
       percentile or higher within its division.
-    - However, it will NOT be tagged as an outlier if at least 2 other schools
-      in the same division are geographically close to it.
 
     nearby_school_count:
     - Counts other schools in the same division within nearby_radius_km.
     - Default radius is 5 km.
-    - If nearby_school_count >= 2, the school is treated as normal even if its
-      distance percentile is 99+.
+    - This is kept as a diagnostic column only. It does not suppress outlier
+      detection.
 
     coordinate_outlier_category:
     - extreme_outlier
@@ -112,17 +109,7 @@ def add_extreme_outlier_columns(
         df.loc[group.index, outlier_percentile_col] = percentiles
 
         extreme_candidates = percentiles >= extreme_percentile
-
-        has_nearby_peers = (
-            df.loc[group.index, nearby_count_col]
-            .fillna(0)
-            .astype(int)
-            >= nearby_min_schools
-        )
-
-        confirmed_outliers = extreme_candidates & ~has_nearby_peers
-
-        df.loc[group.index[confirmed_outliers], outlier_col] = "extreme_outlier"
+        df.loc[group.index[extreme_candidates], outlier_col] = "extreme_outlier"
 
     return df
 
@@ -142,7 +129,6 @@ def add_school_to_sdo_distance(
     nearby_count_col="nearby_school_count",
     outlier_col="coordinate_outlier_category",
     nearby_radius_km=5,
-    nearby_min_schools=2,
 ):
     """
     Creates a new CSV with:
@@ -156,8 +142,8 @@ def add_school_to_sdo_distance(
     - First, compute each school's distance to its matched SDO.
     - Then, rank that distance against other schools in the same division.
     - 99+ percentile means extreme distance.
-    - But if the school has at least 2 nearby schools in the same division,
-      it is treated as normal instead of an outlier.
+    - Nearby school count is retained for context only and does not suppress
+      the outlier tag.
     """
 
     school_csv = Path(school_csv)
@@ -236,7 +222,6 @@ def add_school_to_sdo_distance(
         nearby_count_col=nearby_count_col,
         outlier_col=outlier_col,
         nearby_radius_km=nearby_radius_km,
-        nearby_min_schools=nearby_min_schools,
     )
 
     output_df = merged_df[
@@ -252,7 +237,6 @@ def add_school_to_sdo_distance(
     print(f"Distances computed: {int(valid_distance_rows.sum()):,}")
     print(f"Blank distances: {int((~valid_distance_rows).sum()):,}")
     print(f"Nearby radius used: {nearby_radius_km} km")
-    print(f"Nearby schools required to avoid outlier tag: {nearby_min_schools}")
     print("Outlier category counts:")
     for category, count in output_df[outlier_col].value_counts().sort_index().items():
         print(f"  {category}: {count:,}")
@@ -284,12 +268,6 @@ if __name__ == "__main__":
         default=5,
         help="Distance radius used to count nearby schools in the same division.",
     )
-    parser.add_argument(
-        "--nearby-min-schools",
-        type=int,
-        default=2,
-        help="Minimum nearby schools needed to avoid the outlier tag.",
-    )
 
     args = parser.parse_args()
 
@@ -308,7 +286,6 @@ if __name__ == "__main__":
         nearby_count_col=args.nearby_count_col,
         outlier_col=args.outlier_col,
         nearby_radius_km=args.nearby_radius_km,
-        nearby_min_schools=args.nearby_min_schools,
     )
 
 
@@ -332,7 +309,7 @@ if __name__ == "__main__":
 #
 # nearby_school_count:
 # - number of other schools in the same division within 5 km by default
-# - if nearby_school_count is at least 2, the school is not tagged as outlier
+# - diagnostic context only; it does not prevent an outlier tag
 #
 # coordinate_outlier_category values:
 # - normal
