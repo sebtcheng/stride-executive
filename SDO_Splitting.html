@@ -2721,69 +2721,89 @@
           const minSpan = document.createElement("span");
           minSpan.style.position = "absolute";
           minSpan.style.left = "0";
+          minSpan.style.top = "6px";
           minSpan.textContent = "1";
           ticksContainer.appendChild(minSpan);
           
+          // Helper to create a premium tick marker
+          const createTick = (value, color, labelText) => {
+            const pct = (value / sliderMax) * 100;
+            const container = document.createElement("div");
+            container.style.position = "absolute";
+            container.style.left = pct + "%";
+            container.style.top = "-2px";
+            container.style.transform = "translateX(-50%)";
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+            container.style.alignItems = "center";
+            container.style.cursor = "pointer";
+            container.title = `Click to set to ${value}`;
+            
+            container.addEventListener("click", () => {
+              if (minSchoolsInput) {
+                minSchoolsInput.value = value;
+                if (minSchoolsVal) minSchoolsVal.value = value;
+                pressurePage = 1;
+                renderDashboard();
+              }
+            });
+
+            // Visual tick mark
+            const line = document.createElement("div");
+            line.style.width = "3px";
+            line.style.height = "6px";
+            line.style.background = color;
+            line.style.borderRadius = "2px";
+            line.style.boxShadow = "0 1px 3px rgba(0,0,0,0.15)";
+            line.style.transition = "transform 0.2s, height 0.2s";
+            
+            // Label box
+            const labelSpan = document.createElement("span");
+            labelSpan.style.marginTop = "3px";
+            labelSpan.style.fontSize = "9px";
+            labelSpan.style.fontWeight = "950";
+            labelSpan.style.color = color;
+            labelSpan.style.background = "rgba(255, 255, 255, 0.95)";
+            labelSpan.style.padding = "1px 5px";
+            labelSpan.style.borderRadius = "4px";
+            labelSpan.style.border = `1px solid ${color}`;
+            labelSpan.style.boxShadow = "0 1px 3px rgba(0,0,0,0.08)";
+            labelSpan.style.transition = "all 0.2s";
+            labelSpan.textContent = labelText;
+            
+            container.addEventListener("mouseenter", () => {
+              line.style.transform = "scaleY(1.4)";
+              labelSpan.style.transform = "scale(1.1) translateY(1px)";
+              labelSpan.style.background = color;
+              labelSpan.style.color = "#ffffff";
+            });
+            container.addEventListener("mouseleave", () => {
+              line.style.transform = "none";
+              labelSpan.style.transform = "none";
+              labelSpan.style.background = "rgba(255, 255, 255, 0.95)";
+              labelSpan.style.color = color;
+            });
+            
+            container.appendChild(line);
+            container.appendChild(labelSpan);
+            return container;
+          };
+          
           // Pointer for 740
           if (sliderMax > 740) {
-            const pct740 = (740 / sliderMax) * 100;
-            const span740 = document.createElement("span");
-            span740.style.position = "absolute";
-            span740.style.left = pct740 + "%";
-            span740.style.transform = "translateX(-50%)";
-            span740.style.color = "var(--amber)";
-            span740.style.fontWeight = "950";
-            span740.style.whiteSpace = "nowrap";
-            span740.style.display = "flex";
-            span740.style.flexDirection = "column";
-            span740.style.alignItems = "center";
-            span740.style.lineHeight = "1";
-            
-            const arrow = document.createElement("span");
-            arrow.style.fontSize = "7px";
-            arrow.style.marginBottom = "-1px";
-            arrow.style.lineHeight = "1";
-            arrow.textContent = "▼";
-            span740.appendChild(arrow);
-            
-            const txt = document.createElement("span");
-            txt.textContent = "740";
-            span740.appendChild(txt);
-            ticksContainer.appendChild(span740);
+            ticksContainer.appendChild(createTick(740, "var(--amber)", "740"));
           }
           
-          // Pointer for 1000 (if it's not the right boundary)
+          // Pointer for 1000
           if (sliderMax > 1000) {
-            const pct1000 = (1000 / sliderMax) * 100;
-            const span1000 = document.createElement("span");
-            span1000.style.position = "absolute";
-            span1000.style.left = pct1000 + "%";
-            span1000.style.transform = "translateX(-50%)";
-            span1000.style.color = "var(--navy)";
-            span1000.style.fontWeight = "950";
-            span1000.style.whiteSpace = "nowrap";
-            span1000.style.display = "flex";
-            span1000.style.flexDirection = "column";
-            span1000.style.alignItems = "center";
-            span1000.style.lineHeight = "1";
-            
-            const arrow = document.createElement("span");
-            arrow.style.fontSize = "7px";
-            arrow.style.marginBottom = "-1px";
-            arrow.style.lineHeight = "1";
-            arrow.textContent = "▼";
-            span1000.appendChild(arrow);
-            
-            const txt = document.createElement("span");
-            txt.textContent = "1000";
-            span1000.appendChild(txt);
-            ticksContainer.appendChild(span1000);
+            ticksContainer.appendChild(createTick(1000, "var(--navy)", "1000"));
           }
           
           // Right boundary (the dynamic sliderMax)
           const maxSpan = document.createElement("span");
           maxSpan.style.position = "absolute";
           maxSpan.style.right = "0";
+          maxSpan.style.top = "6px";
           maxSpan.style.color = sliderMax > 1000 ? "#dc2626" : "var(--muted)";
           maxSpan.style.fontWeight = sliderMax > 1000 ? "950" : "850";
           maxSpan.textContent = sliderMax;
@@ -4073,7 +4093,18 @@
 
     if (minSchoolsInput) {
       minSchoolsInput.addEventListener("input", event => {
-        if (minSchoolsVal) minSchoolsVal.value = event.target.value;
+        let val = parseInt(event.target.value, 10) || 1;
+        // Snap dragging values to the nearest multiple of 10 (except at bounds)
+        if (val > 1) {
+          const maxVal = parseInt(minSchoolsInput.max, 10) || 1000;
+          if (val < maxVal) {
+            val = Math.round(val / 10) * 10;
+            if (val < 1) val = 1;
+            if (val > maxVal) val = maxVal;
+          }
+        }
+        event.target.value = val;
+        if (minSchoolsVal) minSchoolsVal.value = val;
         pressurePage = 1;
         renderDashboard();
       });
