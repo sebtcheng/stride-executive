@@ -1996,7 +1996,7 @@
             <option value="districts_count">Districts Count</option>
 
             <option value="excess_school">Excess School</option>
-            <option value="additional_districts_needed">Additional Districts Need</option>
+            <option value="additional_districts_needed">Indicative Districts Need</option>
           </select>
         </label>
 
@@ -2069,9 +2069,9 @@
         <p id="kpiMooeNote">Sum of total_mooe using the CSV MOOE formula output.</p>
       </article>
       <article class="card kpi red">
-        <small>Total Additional Districts Needed</small>
+        <small>Total Indicative Districts Need</small>
         <h2 id="kpiDistrictGap">—</h2>
-        <p id="kpiDistrictGapNote">Positive additional_districts_needed across filtered SDOs.</p>
+        <p id="kpiDistrictGapNote">Positive indicative districts need across filtered SDOs.</p>
       </article>
     </section>
 
@@ -2171,13 +2171,9 @@
             <h2 class="section-title" id="needsTitle">Needs by Region</h2>
             <p class="subtext" id="needsSubtitle">Univariate regional ranking using the selected need metric.</p>
           </div>
-          <label>
-            <span>Need Metric</span>
-            <select id="needMetricBy" class="mini-select">
-              <option value="additional_districts_needed">Additional Districts Needed</option>
-
-            </select>
-          </label>
+          <select id="needMetricBy" style="display:none;" aria-hidden="true">
+            <option value="additional_districts_needed">Indicative Districts Need</option>
+          </select>
         </div>
         <div id="needsChart" class="bars"></div>
         <div id="needsAnalysis" class="analysis-box"></div>
@@ -2185,7 +2181,7 @@
 
       <article class="card pressure-card">
         <h2 class="section-title">District Needs</h2>
-        <p class="subtext">All divisions ranked by additional districts needed and excess school values. Click headers
+        <p class="subtext">All divisions ranked by indicative districts need and excess school values. Click headers
           to sort.</p>
         <table>
           <thead>
@@ -2197,7 +2193,7 @@
               <th><button class="th-button" type="button" data-pressure-sort="size">Size <span
                     id="pressureSortSize">↕</span></button></th>
               <th><button class="th-button" type="button" data-pressure-sort="additional_districts_needed">Add'l
-                  Districts <span id="pressureSortAdditional">▼</span></button></th>
+                  Need <span id="pressureSortAdditional">▼</span></button></th>
               <th><button class="th-button" type="button" data-pressure-sort="excess_school">Excess Schools <span
                     id="pressureSortExcess">↕</span></button></th>
             </tr>
@@ -2302,7 +2298,7 @@
       total_mooe: { label: "Total MOOE", type: "money", color: "#dc2626" },
       legdist_count: { label: "Legislative District Count", type: "sum", color: "#64748b" },
       excess_school: { label: "Excess Schools", type: "sum", color: "#be123c" },
-      additional_districts_needed: { label: "Additional Districts Needed", type: "sum", color: "#991b1b" }
+      additional_districts_needed: { label: "Indicative Districts Need", type: "sum", color: "#991b1b" }
     };
 
     const sizeColors = {
@@ -2968,7 +2964,7 @@
           "Teachers: " + formatNumber(row.teacher_count_num) + "<br>" +
           "Schools: " + formatNumber(row.school_count_num) + "<br>" +
           "MOOE: " + formatMoney(row.total_mooe_num) + "<br>" +
-          "Additional districts needed: " + formatNumber(row.additional_districts_needed_num) + "<br>" +
+          "Indicative districts need: " + formatNumber(row.additional_districts_needed_num) + "<br>" +
           "<b>Click this SDO to show schools.</b>"
         );
 
@@ -2976,7 +2972,7 @@
           "<b>" + escapeHtml(row.sdo) + "</b><br>" +
           escapeHtml(row.region) + " · Size " + escapeHtml(row.size) + "<br>" +
           "Schools: " + formatNumber(row.school_count_num) + "<br>" +
-          "Additional districts needed: " + formatNumber(row.additional_districts_needed_num),
+          "Indicative districts need: " + formatNumber(row.additional_districts_needed_num),
           {
             direction: "top",
             offset: [0, -radius - 2],
@@ -3185,7 +3181,7 @@
       document.getElementById("kpiClassroomsNote").textContent = "Classrooms across the filtered SDO set.";
       document.getElementById("kpiAuthorizedPersonnelNote").textContent = "Authorized positions across the filtered SDO set.";
       document.getElementById("kpiMooeNote").textContent = "Total MOOE from the CSV output.";
-      document.getElementById("kpiDistrictGapNote").textContent = "Sum of positive additional districts needed.";
+      document.getElementById("kpiDistrictGapNote").textContent = "Sum of positive indicative districts need.";
     }
 
     function renderStackedRegional(rows, distribution, metric) {
@@ -3474,7 +3470,7 @@
       const chart = document.getElementById("needsChart");
       if (!chart) return;
       const selectedMetric = "additional_districts_needed";
-      const metricLabelText = "Additional Districts Needed";
+      const metricLabelText = "Indicative Districts Need";
       const currentColumn = "districts_count";
       const currentLabelText = "Current Districts";
 
