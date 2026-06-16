@@ -2185,6 +2185,7 @@
   };
 
   let rawRows = [];
+  let selectedSdo = null;
   let schoolRows = [];
   let tableFilters = {};
   let sortState = { column: "region", direction: "asc" };
@@ -2438,6 +2439,10 @@
     const classifications = getSelectedValues("classificationFilter");
     const search = document.getElementById("searchInput").value.trim().toLowerCase();
 
+    if (!search) {
+      selectedSdo = null;
+    }
+
     const minSchoolsInput = document.getElementById("minSchoolsFilter");
     const minSchools = minSchoolsInput ? parseInt(minSchoolsInput.value, 10) || 1 : 1;
 
@@ -2449,7 +2454,8 @@
       const haystack = [row.sdo, row.region, row.size, row.locality, row.locality_classification].join(" ").toLowerCase();
       const matchesSearch = !search || haystack.includes(search);
       const matchesMinSchools = (row.school_count_num || 0) >= minSchools;
-      return matchesRegion && matchesSize && matchesLocality && matchesClassification && matchesSearch && matchesMinSchools;
+      const matchesSelectedSdo = !selectedSdo || row.sdo === selectedSdo;
+      return matchesRegion && matchesSize && matchesLocality && matchesClassification && matchesSearch && matchesMinSchools && matchesSelectedSdo;
     });
   }
 
@@ -2740,17 +2746,29 @@
         });
       });
 
-      marker.on("click", () => showSchoolsForSdo(row));
+      marker.on("click", () => showSchoolsForSdo(row, true));
 
       marker.addTo(markerLayer);
     });
 
+    if (selectedSdo) {
+      const selectedRow = rows.find(r => r.sdo === selectedSdo);
+      if (selectedRow) {
+        showSchoolsForSdo(selectedRow, false);
+      }
+    }
+
     setTimeout(() => map.invalidateSize(), 150);
   }
 
-  function showSchoolsForSdo(sdoRow) {
+  function showSchoolsForSdo(sdoRow, fitBounds = true) {
     if (!schoolLayer) return;
     schoolLayer.clearLayers();
+
+    if (fitBounds) {
+      selectedSdo = sdoRow.sdo;
+      document.getElementById("searchInput").value = sdoRow.sdo;
+    }
 
     const key = getSdoMatchKey(sdoRow);
     const preciseKey = buildPreciseMatchKey(sdoRow.sdo);
@@ -2765,6 +2783,7 @@
     if (!matches.length) {
       const status = document.getElementById("loadStatus");
       status.textContent = "No valid school coordinates found for " + sdoRow.sdo + ".";
+      if (fitBounds) renderDashboard();
       return;
     }
 
@@ -2795,10 +2814,13 @@
       bounds.push([row.latitude_num, row.longitude_num]);
     });
 
-    if (bounds.length > 1) {
-      map.fitBounds(bounds, { padding: [24, 24], maxZoom: 12 });
-    } else if (bounds.length === 1) {
-      map.setView(bounds[0], 12);
+    if (fitBounds) {
+      if (bounds.length > 1) {
+        map.fitBounds(bounds, { padding: [24, 24], maxZoom: 12 });
+      } else if (bounds.length === 1) {
+        map.setView(bounds[0], 12);
+      }
+      renderDashboard();
     }
 
     const status = document.getElementById("loadStatus");
@@ -3881,6 +3903,7 @@
   }
 
   document.getElementById("clearFilters").addEventListener("click", () => {
+    selectedSdo = null;
     setOnlyAllSelected("regionFilter");
     setOnlyAllSelected("sizeFilter");
     setOnlyAllSelected("localityFilter");
