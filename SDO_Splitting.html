@@ -1964,15 +1964,19 @@
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-top: 10px;">
         <label>
           <span>Search SDO</span>
-          <input id="searchInput" class="search" type="search"
-            placeholder="Search by SDO name, region, size, or locality…" />
+          <input id="searchInput" class="search" type="search" placeholder="Search by SDO name, region, size, or locality…" />
         </label>
         <label>
-          <span>Min School Count: <span id="minSchoolsVal"
-              style="color: var(--blue-600); font-weight: 950;">1</span></span>
-          <div style="display: flex; align-items: center; height: 43px;">
-            <input id="minSchoolsFilter" type="range" min="1" max="100" value="1"
-              style="width: 100%; accent-color: var(--navy); cursor: pointer;" />
+          <span style="display: flex; align-items: center; justify-content: space-between;">
+            <span>Min School Count</span>
+            <input id="minSchoolsVal" type="number" min="1" value="1" style="width: 72px; height: 24px; padding: 2px 6px; border: 2px solid var(--line); border-radius: 8px; font-size: 11px; font-weight: 950; color: var(--navy); outline: none; text-align: center;" />
+          </span>
+          <div style="display: flex; flex-direction: column; justify-content: center; height: 43px; gap: 2px;">
+            <input id="minSchoolsFilter" type="range" min="1" max="100" value="1" style="width: 100%; accent-color: var(--navy); cursor: pointer; margin: 0;" />
+            <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 850; color: var(--muted); padding: 0 2px; line-height: 1;">
+              <span>1</span>
+              <span id="maxSchoolsVal">740</span>
+            </div>
           </div>
         </label>
       </div>
@@ -2180,7 +2184,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const CSV_FILE = "ph_schools_20260616410.csv";
+    const CSV_FILE = "sdo_classification_202606151013.csv";
     const SCHOOL_FILE = "ph_schools_20260616410.csv";
 
     const columns = [
@@ -2698,11 +2702,18 @@
       // Set dynamic max for min school count slider
       const minSchoolsInput = document.getElementById("minSchoolsFilter");
       const minSchoolsVal = document.getElementById("minSchoolsVal");
+      const maxSchoolsLabel = document.getElementById("maxSchoolsVal");
       if (minSchoolsInput && rawRows.length) {
         const maxSchools = Math.max(...rawRows.map(row => row.school_count_num || 0));
         minSchoolsInput.max = maxSchools;
         minSchoolsInput.value = 1;
-        if (minSchoolsVal) minSchoolsVal.textContent = "1";
+        if (minSchoolsVal) {
+          minSchoolsVal.max = maxSchools;
+          minSchoolsVal.value = 1;
+        }
+        if (maxSchoolsLabel) {
+          maxSchoolsLabel.textContent = maxSchools;
+        }
       }
 
       updateDistributionOptions();
@@ -2892,11 +2903,14 @@
           fillOpacity: 0.82
         });
 
+        const distNum = toNumber(row.linear_distance);
+        const distText = distNum > 0 ? "<br>Linear distance: <b>" + distNum.toFixed(2) + " km</b>" : "";
+
         marker.bindPopup(
           "<b>" + escapeHtml(row.school_name) + "</b><br>" +
           escapeHtml(row.division) + "<br>" +
           escapeHtml(row.region) + "<br>" +
-          "Legislative district: <b>" + escapeHtml(district) + "</b>"
+          "Legislative district: <b>" + escapeHtml(district) + "</b>" + distText
         );
 
         marker.addTo(schoolLayer);
@@ -3982,10 +3996,29 @@
     document.getElementById("searchInput").addEventListener("input", renderDashboard);
 
     const minSchoolsInput = document.getElementById("minSchoolsFilter");
+    const minSchoolsVal = document.getElementById("minSchoolsVal");
+
     if (minSchoolsInput) {
       minSchoolsInput.addEventListener("input", event => {
-        const valSpan = document.getElementById("minSchoolsVal");
-        if (valSpan) valSpan.textContent = event.target.value;
+        if (minSchoolsVal) minSchoolsVal.value = event.target.value;
+        pressurePage = 1;
+        renderDashboard();
+      });
+    }
+
+    if (minSchoolsVal) {
+      minSchoolsVal.addEventListener("input", event => {
+        let val = parseInt(event.target.value, 10) || 1;
+        const maxVal = minSchoolsInput ? parseInt(minSchoolsInput.max, 10) || 100 : 100;
+        if (val < 1) val = 1;
+        if (val > maxVal) val = maxVal;
+        
+        // Temporarily override input value if out of bounds to guide user
+        if (event.target.value !== "" && parseInt(event.target.value, 10) !== val) {
+          event.target.value = val;
+        }
+        
+        if (minSchoolsInput) minSchoolsInput.value = val;
         pressurePage = 1;
         renderDashboard();
       });
@@ -4000,11 +4033,8 @@
       document.getElementById("distributionBy").value = "size";
       document.getElementById("metricBy").value = "row_count";
       document.getElementById("searchInput").value = "";
-      if (minSchoolsInput) {
-        minSchoolsInput.value = 1;
-        const valSpan = document.getElementById("minSchoolsVal");
-        if (valSpan) valSpan.textContent = "1";
-      }
+      if (minSchoolsInput) minSchoolsInput.value = 1;
+      if (minSchoolsVal) minSchoolsVal.value = 1;
       tableFilters = {};
       sortState = { column: "region", direction: "asc" };
       pressureSortState = { column: "additional_districts_needed", direction: "desc" };
