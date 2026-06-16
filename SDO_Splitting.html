@@ -1969,13 +1969,17 @@
         <label>
           <span style="display: flex; align-items: center; justify-content: space-between;">
             <span>Min School Count</span>
-            <input id="minSchoolsVal" type="number" min="1" value="1" style="width: 72px; height: 24px; padding: 2px 6px; border: 2px solid var(--line); border-radius: 8px; font-size: 11px; font-weight: 950; color: var(--navy); outline: none; text-align: center;" />
+            <input id="minSchoolsVal" type="number" min="1" max="1000" value="1" style="width: 72px; height: 24px; padding: 2px 6px; border: 2px solid var(--line); border-radius: 8px; font-size: 11px; font-weight: 950; color: var(--navy); outline: none; text-align: center;" />
           </span>
           <div style="display: flex; flex-direction: column; justify-content: center; height: 43px; gap: 2px;">
-            <input id="minSchoolsFilter" type="range" min="1" max="100" value="1" style="width: 100%; accent-color: var(--navy); cursor: pointer; margin: 0;" />
-            <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: 850; color: var(--muted); padding: 0 2px; line-height: 1;">
-              <span>1</span>
-              <span id="maxSchoolsVal">740</span>
+            <input id="minSchoolsFilter" type="range" min="1" max="1000" value="1" style="width: 100%; accent-color: var(--navy); cursor: pointer; margin: 0;" />
+            <div style="position: relative; font-size: 9px; font-weight: 850; color: var(--muted); height: 16px; margin-top: 1px;">
+              <span style="position: absolute; left: 0;">1</span>
+              <span id="maxSchoolsVal" style="position: absolute; left: 74%; transform: translateX(-50%); color: var(--amber); font-weight: 950; white-space: nowrap; display: flex; flex-direction: column; align-items: center; line-height: 1;">
+                <span style="font-size: 7px; margin-bottom: -1px; line-height: 1;">▼</span>
+                <span id="maxSchoolsValText">740</span>
+              </span>
+              <span style="position: absolute; right: 0;">1000</span>
             </div>
           </div>
         </label>
@@ -2045,6 +2049,7 @@
           <button class="map-mode" type="button" data-layer="terrain">Terrain</button>
           <button class="map-mode" type="button" data-layer="light">Light</button>
           <button class="map-mode active" type="button" data-layer="dark">Dark</button>
+          <button id="resetMapSelection" class="map-mode" type="button" style="display: none; background: #fee2e2; color: #b91c1c; border-color: #fca5a5; font-weight: 950; margin-left: auto;">Reset Selection</button>
         </div>
 
         <div id="philippinesMap"></div>
@@ -2703,16 +2708,21 @@
       const minSchoolsInput = document.getElementById("minSchoolsFilter");
       const minSchoolsVal = document.getElementById("minSchoolsVal");
       const maxSchoolsLabel = document.getElementById("maxSchoolsVal");
+      const maxSchoolsText = document.getElementById("maxSchoolsValText");
       if (minSchoolsInput && rawRows.length) {
         const maxSchools = Math.max(...rawRows.map(row => row.school_count_num || 0));
-        minSchoolsInput.max = maxSchools;
+        minSchoolsInput.max = 1000;
         minSchoolsInput.value = 1;
         if (minSchoolsVal) {
-          minSchoolsVal.max = maxSchools;
+          minSchoolsVal.max = 1000;
           minSchoolsVal.value = 1;
         }
         if (maxSchoolsLabel) {
-          maxSchoolsLabel.textContent = maxSchools;
+          const pct = Math.min(Math.max((maxSchools / 1000) * 100, 0), 100);
+          maxSchoolsLabel.style.left = pct + "%";
+        }
+        if (maxSchoolsText) {
+          maxSchoolsText.textContent = maxSchools;
         }
       }
 
@@ -2751,13 +2761,6 @@
         minZoom: 4,
         maxZoom: 18,
         zoomControl: true
-      });
-
-      map.on("click", () => {
-        if (selectedSdo) {
-          selectedSdo = null;
-          renderDashboard();
-        }
       });
 
       markerLayer = L.layerGroup().addTo(map);
@@ -2981,6 +2984,11 @@
       const needsRows = selectedRegions.length ? rawRows.filter(row => selectedRegions.includes(row.region)) : rawRows;
       const needsAxis = "sdo";
       const metricName = metricConfig[metric].label;
+
+      const resetBtn = document.getElementById("resetMapSelection");
+      if (resetBtn) {
+        resetBtn.style.display = selectedSdo ? "inline-block" : "none";
+      }
 
       renderKpis(rows);
       renderMap(rows);
@@ -4044,9 +4052,18 @@
       renderDashboard();
     });
 
-    document.querySelectorAll(".map-mode").forEach(button => {
+    document.querySelectorAll(".map-mode[data-layer]").forEach(button => {
       button.addEventListener("click", () => setMapLayer(button.dataset.layer));
     });
+
+    const resetMapSelBtn = document.getElementById("resetMapSelection");
+    if (resetMapSelBtn) {
+      resetMapSelBtn.addEventListener("click", () => {
+        selectedSdo = null;
+        if (schoolLayer) schoolLayer.clearLayers();
+        renderDashboard();
+      });
+    }
 
     document.querySelectorAll("[data-maximize-card]").forEach(button => {
       button.addEventListener("click", () => toggleMaximizedCard(button));
