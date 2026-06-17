@@ -2232,6 +2232,95 @@
     const CSV_FILE = "sdo_classification_202606151013.csv";
     const SCHOOL_FILE = "ph_schools_20260616410.csv";
 
+    // Fix manual typing in School Count Range boxes:
+    // the original live-sync handler clamps partial entries like "7" or "74"
+    // to the opposite slider value, which makes the field jump to max/min.
+    (function installSchoolRangeTypingFix() {
+      const numericBoxIds = new Set(["minSchoolsVal", "maxSchoolsVal"]);
+
+      function controls() {
+        return {
+          minBox: document.getElementById("minSchoolsVal"),
+          maxBox: document.getElementById("maxSchoolsVal"),
+          minSlider: document.getElementById("minSchoolsFilter"),
+          maxSlider: document.getElementById("maxSchoolsFilter")
+        };
+      }
+
+      function refreshRangeView() {
+        if (typeof updateSliderHighlight === "function") updateSliderHighlight();
+        if (typeof pressurePage !== "undefined") pressurePage = 1;
+        if (typeof renderDashboard === "function") renderDashboard();
+      }
+
+      function onRangeBoxInput(event) {
+        if (!event.target || !numericBoxIds.has(event.target.id)) return;
+
+        event.stopImmediatePropagation();
+
+        const { minBox, maxBox, minSlider, maxSlider } = controls();
+        if (!minBox || !maxBox || !minSlider || !maxSlider) return;
+
+        const rawValue = event.target.value.trim();
+        if (rawValue === "") return;
+
+        const typedValue = Number.parseInt(rawValue, 10);
+        if (!Number.isFinite(typedValue)) return;
+
+        const hardMin = Number.parseInt(minSlider.min, 10) || 1;
+        const hardMax = Number.parseInt(maxSlider.max, 10) || 1000;
+        const currentMin = Number.parseInt(minSlider.value, 10) || hardMin;
+        const currentMax = Number.parseInt(maxSlider.value, 10) || hardMax;
+
+        if (event.target.id === "minSchoolsVal") {
+          if (typedValue >= hardMin && typedValue <= currentMax) {
+            minSlider.value = typedValue;
+            refreshRangeView();
+          }
+          return;
+        }
+
+        if (typedValue <= hardMax && typedValue >= currentMin) {
+          maxSlider.value = typedValue;
+          refreshRangeView();
+        }
+      }
+
+      function onRangeBoxCommit(event) {
+        if (!event.target || !numericBoxIds.has(event.target.id)) return;
+
+        event.stopImmediatePropagation();
+
+        const { minBox, maxBox, minSlider, maxSlider } = controls();
+        if (!minBox || !maxBox || !minSlider || !maxSlider) return;
+
+        const hardMin = Number.parseInt(minSlider.min, 10) || 1;
+        const hardMax = Number.parseInt(maxSlider.max, 10) || 1000;
+
+        let minValue = Number.parseInt(minBox.value, 10);
+        let maxValue = Number.parseInt(maxBox.value, 10);
+
+        if (!Number.isFinite(minValue)) minValue = Number.parseInt(minSlider.value, 10) || hardMin;
+        if (!Number.isFinite(maxValue)) maxValue = Number.parseInt(maxSlider.value, 10) || hardMax;
+
+        minValue = Math.max(hardMin, Math.min(hardMax, minValue));
+        maxValue = Math.max(hardMin, Math.min(hardMax, maxValue));
+
+        if (event.target.id === "minSchoolsVal" && minValue > maxValue) minValue = maxValue;
+        if (event.target.id === "maxSchoolsVal" && maxValue < minValue) maxValue = minValue;
+
+        minBox.value = minValue;
+        maxBox.value = maxValue;
+        minSlider.value = minValue;
+        maxSlider.value = maxValue;
+        refreshRangeView();
+      }
+
+      document.addEventListener("input", onRangeBoxInput, true);
+      document.addEventListener("change", onRangeBoxCommit, true);
+      document.addEventListener("blur", onRangeBoxCommit, true);
+    })();
+
     const columns = [
       "region",
       "sdo",
@@ -2331,6 +2420,69 @@
     let activeTileLayer;
     let scatterZoom = null;
     const kpiAnimations = {};
+    const dashboardRenderDebounceMs = 450;
+    let dashboardRenderTimer = null;
+
+    function scheduleDashboardRender(delay = dashboardRenderDebounceMs) {
+      window.clearTimeout(dashboardRenderTimer);
+      dashboardRenderTimer = window.setTimeout(() => {
+        pressurePage = 1;
+        renderDashboard();
+      }, delay);
+    }
+
+    function captureFocusedInput() {
+      const active = document.activeElement;
+      if (!active || !active.matches || !active.matches("input, textarea, select")) return null;
+
+      return {
+        id: active.id || "",
+        focusKey: active.dataset ? (active.dataset.focusKey || "") : "",
+        value: "value" in active ? active.value : "",
+        selectionStart: typeof active.selectionStart === "number" ? active.selectionStart : null,
+        selectionEnd: typeof active.selectionEnd === "number" ? active.selectionEnd : null
+      };
+    }
+
+    function restoreFocusedInput(snapshot) {
+      if (!snapshot) return;
+
+      const restore = () => {
+        const target = snapshot.id
+          ? document.getElementById(snapshot.id)
+          : snapshot.focusKey
+            ? document.querySelector('[data-focus-key="' + snapshot.focusKey + '"]')
+            : null;
+
+        if (!target || !target.focus) return;
+
+        target.focus({ preventScroll: true });
+
+        if (typeof target.setSelectionRange === "function" && snapshot.selectionStart !== null && snapshot.selectionEnd !== null) {
+          const length = String(target.value || "").length;
+          const start = Math.min(snapshot.selectionStart, length);
+          const end = Math.min(snapshot.selectionEnd, length);
+          target.setSelectionRange(start, end);
+        }
+      };
+
+      restore();
+      window.requestAnimationFrame(restore);
+    }
+
+    function isDebouncedFilterTypingTarget(target) {
+      return target &&
+        target.matches &&
+        target.matches("#searchInput, .table-filter, .table-minmax, #minSchoolsVal, #maxSchoolsVal");
+    }
+
+    // Backspace/Delete can feel especially jarring when a large table redraws.
+    // Capture those keys and route them through the same debounce window.
+    document.addEventListener("keydown", event => {
+      if ((event.key === "Backspace" || event.key === "Delete") && isDebouncedFilterTypingTarget(event.target)) {
+        scheduleDashboardRender();
+      }
+    }, true);
 
     const tileLayers = {
       road: {
@@ -3125,6 +3277,7 @@
     }
 
     function renderDashboard() {
+      const focusSnapshot = captureFocusedInput();
       const rows = getCurrentRows();
       const tableRows = getTableRows();
       const distribution = document.getElementById("distributionBy").value;
@@ -3153,6 +3306,7 @@
       renderInterpretation(rows, metric, distribution);
 
       document.getElementById("metricChip").innerHTML = '<span class="dot" style="background:' + metricConfig[metric].color + ';"></span>' + metricName;
+      restoreFocusedInput(focusSnapshot);
     }
 
     function renderKpis(rows) {
@@ -3942,22 +4096,24 @@
           min.className = "table-minmax";
           min.type = "number";
           min.placeholder = "Min";
+          min.dataset.focusKey = "table:" + column + ":min";
           min.value = (tableFilters[column] && tableFilters[column].min) || "";
           min.addEventListener("input", event => {
             tableFilters[column] = tableFilters[column] || {};
             tableFilters[column].min = event.target.value;
-            renderDashboard();
+            scheduleDashboardRender();
           });
 
           const max = document.createElement("input");
           max.className = "table-minmax";
           max.type = "number";
           max.placeholder = "Max";
+          max.dataset.focusKey = "table:" + column + ":max";
           max.value = (tableFilters[column] && tableFilters[column].max) || "";
           max.addEventListener("input", event => {
             tableFilters[column] = tableFilters[column] || {};
             tableFilters[column].max = event.target.value;
-            renderDashboard();
+            scheduleDashboardRender();
           });
 
           rangeRow.appendChild(min);
@@ -3968,11 +4124,12 @@
           input.className = "table-filter";
           input.type = "search";
           input.placeholder = "Filter";
+          input.dataset.focusKey = "table:" + column + ":text";
           input.value = (tableFilters[column] && tableFilters[column].text) || "";
           input.addEventListener("input", event => {
             tableFilters[column] = tableFilters[column] || {};
             tableFilters[column].text = event.target.value;
-            renderDashboard();
+            scheduleDashboardRender();
           });
           filterWrap.appendChild(input);
         }
@@ -4152,7 +4309,7 @@
       renderDashboard();
     });
 
-    document.getElementById("searchInput").addEventListener("input", renderDashboard);
+    document.getElementById("searchInput").addEventListener("input", () => scheduleDashboardRender());
 
     const minSchoolsInput = document.getElementById("minSchoolsFilter");
     const maxSchoolsInput = document.getElementById("maxSchoolsFilter");
