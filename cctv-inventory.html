@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InsightED CCTV Inventory Monitoring Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#08315F;
+  --blue:#075985;
+  --blue-600:#0284C7;
+  --blue-400:#7DD3FC;
+  --blue-100:#E0F2FE;
+  --blue-50:#F0F9FF;
+  --gold:#FBBF24;
+  --amber:#D97706;
+  --red:#B91C1C;
+  --red-100:#FEE2E2;
+  --green:#16A34A;
+  --green-100:#DCFCE7;
+  --purple:#7C3AED;
+  --slate:#475569;
+  --card:#FFFFFF;
+  --text:#0F172A;
+  --muted:#64748B;
+  --line:#BAE6FD;
+  --font: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --radius:22px;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  color:var(--text);
+  font-family:var(--font);
+  background-color:var(--blue-50);
+  background-attachment:fixed;
+  background-image:
+    radial-gradient(43.5% 49.5% at 10% 12%,rgba(7,89,133,.30) 0 34%,transparent 78%),
+    radial-gradient(46.5% 54% at 92% 10%,rgba(251,191,36,.42) 0 36%,transparent 80%),
+    radial-gradient(40.5% 48% at 84% 92%,rgba(125,211,252,.30) 0 34%,transparent 78%),
+    radial-gradient(45% 52.5% at 8% 92%,rgba(217,119,6,.26) 0 28%,rgba(251,191,36,.18) 42%,transparent 80%);
+}
+
+.app{display:grid;grid-template-columns:72px 1fr;min-height:100vh}
+
+.sidebar{
+  position:relative;
+  z-index:50;
+  width:72px;
+  color:white;
+  padding:24px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:28px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--navy) 92%,transparent),color-mix(in srgb,var(--blue) 72%,var(--navy) 28%));
+  border-right:1px solid rgba(255,255,255,.24);
+  box-shadow:18px 0 42px rgba(11,31,77,.16);
+  overflow:hidden;
+  transition:width .18s ease,padding .18s ease;
+}
+
+.sidebar:hover{width:260px;padding-left:24px;padding-right:24px}
+
+.brand{
+  width:44px;
+  height:44px;
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  border-radius:16px;
+  background:white;
+  color:var(--blue);
+  font-size:0;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.brand::before{
+  content:"IE";
+  font-size:16px;
+  color:var(--blue);
+  font-weight:800;
+}
+
+.sidebar:hover .brand{
+  width:auto;
+  padding:10px 14px;
+  display:flex;
+  justify-content:flex-start;
+  font-size:16px;
+  gap:8px;
+}
+
+.sidebar:hover .brand::before{
+  content:"InsightED";
+  font-size:16px;
+}
+
+.nav{display:flex;flex-direction:column;gap:8px}
+.nav a{
+  min-height:46px;
+  padding:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:11px;
+  border:1px solid transparent;
+  border-radius:16px;
+  color:#DFF6FF;
+  font-size:0;
+  font-weight:700;
+  line-height:1;
+  text-decoration:none;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.sidebar:hover .nav a{justify-content:flex-start;font-size:13px}
+.nav a.active{
+  background:rgba(255,255,255,.16);
+  color:white;
+  border-color:rgba(255,255,255,.28);
+  box-shadow:inset 0 -3px 0 var(--gold),0 0 18px color-mix(in srgb,var(--blue-400) 26%,transparent);
+}
+.nav-icon{width:22px;min-width:22px;text-align:center;font-size:15px;font-weight:800}
+
+.main{min-width:0;padding-bottom:28px}
+
+.topbar{
+  position:relative;
+  isolation:isolate;
+  min-height:122px;
+  margin:24px 28px 0;
+  padding:28px 44px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  overflow:hidden;
+  border:2.5px solid color-mix(in srgb,var(--blue) 64%,var(--navy) 36%);
+  border-radius:calc(var(--radius) + 6px);
+  background:
+    radial-gradient(circle at 92% 50%,rgba(251,191,36,.18) 0 7%,rgba(251,191,36,.08) 7.2% 13%,transparent 13.2%),
+    radial-gradient(circle at 98% 46%,rgba(251,191,36,.28) 0 10%,transparent 10.5%),
+    linear-gradient(112deg,var(--navy) 0 70%,rgba(255,255,255,.96) 70.2% 100%);
+}
+
+.topbar::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:70%;
+  background:linear-gradient(135deg,var(--navy),var(--blue));
+  clip-path:polygon(0 0,88% 0,100% 100%,0 100%);
+  z-index:-2;
+}
+
+.topbar::after{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:61%;
+  width:13%;
+  background:color-mix(in srgb,var(--navy) 88%,#000 12%);
+  clip-path:polygon(0 0,58% 0,100% 100%,42% 100%);
+  z-index:-1;
+}
+
+.eyebrow{
+  margin:0 0 6px;
+  color:var(--gold);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+}
+
+.page-title{max-width:min(70%,900px)}
+.page-title h1{
+  margin:0;
+  color:var(--blue-100);
+  font-size:clamp(25px,2.4vw,38px);
+  font-weight:800;
+  letter-spacing:-.03em;
+  line-height:1.05;
+  text-shadow:0 2px 0 rgba(15,23,42,.28);
+}
+.page-title h1 span{color:#F87171}
+.page-title p{
+  max-width:780px;
+  margin:7px 0 0;
+  color:#DFF6FF;
+  font-size:13px;
+  font-weight:600;
+  line-height:1.35;
+}
+
+.status-pill{
+  min-width:230px;
+  padding:12px 14px;
+  border:2px solid var(--blue-100);
+  border-radius:18px;
+  background:rgba(255,255,255,.92);
+  color:var(--navy);
+  text-align:right;
+}
+.status-pill small{
+  display:block;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+.status-pill strong{
+  display:block;
+  margin-top:4px;
+  font-size:15px;
+  font-weight:800;
+}
+.status-pill span{
+  display:block;
+  margin-top:2px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:600;
+}
+
+.content{
+  width:min(1500px,calc(100% - 56px));
+  margin:12px auto 0;
+  display:grid;
+  gap:10px;
+}
+
+.card{
+  min-width:0;
+  background:var(--card);
+  border:2.5px solid color-mix(in srgb,var(--blue) 64%,var(--navy) 36%);
+  border-radius:var(--radius);
+  box-shadow:none;
+}
+
+.card-inner{padding:16px}
+.card-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+  margin-bottom:12px;
+}
+.card h2{
+  margin:0;
+  color:var(--navy);
+  font-size:20px;
+  font-weight:800;
+  letter-spacing:-.02em;
+}
+.card-subtitle{
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:600;
+  line-height:1.35;
+}
+
+.controls{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+  align-items:end;
+}
+
+label{display:grid;gap:6px;min-width:0}
+label span{
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+.select,.search,.button{
+  width:100%;
+  height:42px;
+  border:2px solid var(--line);
+  border-radius:14px;
+  background:white;
+  color:var(--navy);
+  padding:10px 12px;
+  font-family:var(--font);
+  font-size:12px;
+  font-weight:700;
+  outline:none;
+}
+
+.button{
+  border:0;
+  background:var(--blue);
+  color:white;
+  font-weight:800;
+  cursor:pointer;
+}
+.button:hover{background:var(--navy)}
+.button.secondary{
+  background:var(--blue-100);
+  color:var(--navy);
+}
+.button.secondary.active{
+  background:var(--gold);
+  color:var(--navy);
+  box-shadow:inset 0 -3px 0 rgba(8,49,95,.16);
+}
+.button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.file-note{
+  margin-top:9px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:600;
+  line-height:1.35;
+}
+
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:8px;
+}
+
+.kpi-card{
+  position:relative;
+  overflow:hidden;
+  min-height:112px;
+  border-left-width:6px;
+  background:white;
+}
+
+.kpi-card::after{
+  content:"";
+  position:absolute;
+  right:-28px;
+  bottom:-34px;
+  width:94px;
+  height:94px;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--blue-100) 72%,transparent);
+  pointer-events:none;
+}
+
+.kpi-card .card-inner{padding:12px 13px}
+.kpi-top{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:5px;
+  position:relative;
+  z-index:1;
+}
+.tag{
+  display:inline-flex;
+  align-items:center;
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:8px;
+  font-weight:800;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.tag.info{background:#DBEAFE;color:#1E40AF}
+.tag.ok{background:#DCFCE7;color:#166534}
+.tag.warn{background:#FEF3C7;color:#92400E}
+.tag.risk{background:#FEE2E2;color:#991B1B}
+.tag.purple{background:#EDE9FE;color:#5B21B6}
+.tag.slate{background:#F1F5F9;color:#334155}
+
+.kpi-number{
+  margin:0 0 3px;
+  color:var(--navy);
+  font-size:clamp(30px,3.4vw,48px);
+  font-weight:800;
+  letter-spacing:-.07em;
+  line-height:.88;
+  position:relative;
+  z-index:1;
+}
+.kpi-label{
+  margin:0;
+  color:var(--navy);
+  font-size:12px;
+  font-weight:800;
+  line-height:1.1;
+  position:relative;
+  z-index:1;
+}
+.kpi-sub{
+  margin:3px 0 0;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.2;
+  font-weight:600;
+  position:relative;
+  z-index:1;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
+  gap:10px;
+}
+.wide{grid-column:1/-1}
+
+.drill-row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.crumb{
+  border:1.5px solid var(--line);
+  border-radius:999px;
+  background:var(--blue-50);
+  color:var(--blue);
+  padding:7px 12px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.crumb.active{
+  background:var(--navy);
+  color:white;
+  border-color:var(--navy);
+}
+
+.legend{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.legend-item{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid #DBEAFE;
+  border-radius:999px;
+  background:#F8FAFC;
+  padding:7px 10px;
+  color:var(--navy);
+  font-size:11px;
+  font-weight:700;
+}
+.dot{width:9px;height:9px;border-radius:999px;display:inline-block}
+
+.bars{display:grid;gap:9px}
+.heatmap-matrix{
+  display:grid;
+  gap:10px;
+  min-width:780px;
+  overflow-x:auto;
+}
+.matrix-row{
+  display:grid;
+  grid-template-columns:minmax(190px,1.35fr) repeat(5,minmax(96px,.8fr));
+  gap:8px;
+  animation:fadeSlide .35s ease both;
+}
+.matrix-row.drillable{cursor:pointer}
+.matrix-row.drillable:hover .matrix-cell{box-shadow:0 8px 18px rgba(8,49,95,.12);transform:translateY(-1px)}
+.matrix-header .matrix-cell{
+  min-height:auto;
+  background:var(--navy);
+  color:white;
+  font-size:10px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.matrix-cell{
+  min-height:82px;
+  padding:11px 12px;
+  border:1.5px solid #DBEAFE;
+  border-radius:16px;
+  background:#F8FAFC;
+  color:var(--navy);
+  transition:transform .16s ease,box-shadow .16s ease;
+}
+.matrix-cell strong{display:block;font-size:13px;font-weight:800;line-height:1.15}
+.matrix-cell b{display:block;font-size:22px;font-weight:800;letter-spacing:-.04em}
+.matrix-cell small{display:block;margin-top:4px;color:var(--muted);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.matrix-label small{font-size:10px;line-height:1.25;text-transform:none;letter-spacing:0}
+}
+.heat-cell{
+  min-height:118px;
+  padding:13px;
+  border:1.5px solid #DBEAFE;
+  border-radius:18px;
+  background:#EFF6FF;
+  color:var(--navy);
+  cursor:pointer;
+  animation:fadeSlide .35s ease both;
+}
+.heat-cell:hover{box-shadow:0 10px 22px rgba(8,49,95,.14);transform:translateY(-1px)}
+.heat-cell strong{display:block;font-size:14px;font-weight:800;line-height:1.15}
+.heat-cell small{display:block;margin-top:5px;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.heat-cell b{display:block;margin-top:10px;font-size:24px;font-weight:800;letter-spacing:-.04em}
+.heat-low{background:#DCFCE7;border-color:#86EFAC}
+.heat-mid{background:#FEF3C7;border-color:#FDE68A}
+.heat-high{background:#FEE2E2;border-color:#FCA5A5}
+.heat-none{background:#F1F5F9;border-color:#CBD5E1}
+.bar-row{
+  display:grid;
+  grid-template-columns:165px minmax(0,1fr) 92px;
+  gap:10px;
+  align-items:center;
+  font-size:12px;
+  font-weight:700;
+  animation:fadeSlide .35s ease both;
+}
+.bar-row.drillable{
+  cursor:pointer;
+  border-radius:12px;
+  padding:4px;
+}
+.bar-row.drillable:hover{background:#EFF6FF}
+.track{
+  display:flex;
+  height:22px;
+  background:var(--blue-100);
+  border-radius:999px;
+  overflow:hidden;
+}
+.segment{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  height:100%;
+  overflow:hidden;
+  color:white;
+  font-size:8px;
+  font-weight:800;
+  text-shadow:0 1px 2px rgba(0,0,0,.35);
+  white-space:nowrap;
+  animation:growX .72s cubic-bezier(.2,.8,.2,1) both;
+  transform-origin:left;
+}
+.seg-working{background:linear-gradient(90deg,#15803D,var(--green))}
+.seg-broken{background:linear-gradient(90deg,var(--red),#EF4444)}
+.seg-spare{background:linear-gradient(90deg,var(--gold),var(--amber))}
+.seg-issue{background:linear-gradient(90deg,#5B21B6,var(--purple))}
+.seg-none{background:linear-gradient(90deg,#334155,var(--slate))}
+
+.donut-layout{
+  display:grid;
+  grid-template-columns:220px 1fr;
+  gap:12px;
+  align-items:center;
+}
+.donut{
+  width:210px;
+  height:210px;
+  border-radius:50%;
+  margin:auto;
+  display:grid;
+  place-items:center;
+  box-shadow:inset 0 0 0 40px white,0 12px 24px rgba(8,49,95,.12);
+  animation:popIn .45s ease both;
+}
+.donut-center{
+  width:104px;
+  height:104px;
+  border-radius:999px;
+  background:white;
+  display:grid;
+  place-items:center;
+  text-align:center;
+  color:var(--navy);
+  font-weight:800;
+  font-size:14px;
+  box-shadow:0 0 0 1px var(--blue-100);
+}
+
+.histogram{
+  height:292px;
+  display:grid;
+  grid-template-columns:repeat(var(--cols,6),minmax(54px,1fr));
+  gap:10px;
+  align-items:end;
+  padding:22px 8px 52px;
+  border-left:2px solid #DBEAFE;
+  border-bottom:2px solid #DBEAFE;
+  background:linear-gradient(to top,#F8FAFC 1px,transparent 1px) 0 0/100% 20%;
+  overflow-x:auto;
+}
+.hist-col{
+  height:100%;
+  min-width:54px;
+  display:grid;
+  grid-template-rows:1fr auto;
+  gap:8px;
+}
+.hist-area{
+  height:100%;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+}
+.hist-wrap{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  gap:6px;
+  animation:growY .72s cubic-bezier(.2,.8,.2,1) both;
+  transform-origin:bottom;
+}
+.hist-value{
+  text-align:center;
+  color:var(--navy);
+  font-size:10px;
+  font-weight:800;
+}
+.hist-bar{
+  min-height:16px;
+  border-radius:14px 14px 4px 4px;
+}
+.hist-label{
+  color:var(--muted);
+  font-size:10px;
+  font-weight:700;
+  line-height:1.1;
+  text-align:center;
+}
+
+.table-controls{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:8px 0;
+}
+.table-controls .select{
+  width:auto;
+  min-width:120px;
+  height:36px;
+}
+.table-controls .button{
+  width:auto;
+  height:36px;
+  padding:8px 12px;
+}
+.table-page-label{
+  color:var(--muted);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.table-wrap{
+  width:100%;
+  max-height:430px;
+  overflow:auto;
+  border:1px solid #DBEAFE;
+  border-radius:18px;
+}
+.table-wrap::-webkit-scrollbar{width:10px;height:10px}
+.table-wrap::-webkit-scrollbar-track{background:#E0F2FE;border-radius:999px}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--blue);border-radius:999px;border:2px solid #E0F2FE}
+
+table{width:100%;max-width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+th,td{
+  padding:10px 8px;
+  border-bottom:1px solid #E2E8F0;
+  text-align:left;
+  vertical-align:middle;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+th{
+  position:sticky;
+  top:0;
+  z-index:2;
+  color:var(--muted);
+  background:#F8FAFC;
+  font-size:10px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+}
+thead tr:nth-child(2) th{top:38px;z-index:3;background:#EFF6FF}
+.sort-button{
+  width:100%;
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  font:inherit;
+  text-align:left;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  cursor:pointer;
+}
+.sort-button:hover,.sort-button.active{color:var(--blue)}
+.sort-icon{
+  float:right;
+  color:var(--blue);
+  font-size:9px;
+}
+.column-filter{
+  width:100%;
+  min-width:78px;
+  height:30px;
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  background:white;
+  color:var(--navy);
+  padding:6px 7px;
+  font-family:var(--font);
+  font-size:10px;
+  font-weight:700;
+  outline:none;
+  text-transform:none;
+  letter-spacing:0;
+}
+td{color:#1E293B;font-weight:600}
+.school-row{cursor:pointer}
+.school-row:hover td{background:var(--blue-50)}
+
+.update-age{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:56px;
+  padding:5px 7px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:800;
+  line-height:1.1;
+}
+.update-age.ok{background:#DCFCE7;color:#166534}
+.update-age.warn{background:#FEF3C7;color:#92400E}
+.update-age.risk{background:#FEE2E2;color:#991B1B}
+.update-age.neutral{background:#F1F5F9;color:#334155}
+
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:120;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(8,49,95,.52);
+  backdrop-filter:blur(4px);
+}
+.modal-backdrop.open{display:flex}
+.modal{
+  width:min(720px,100%);
+  border:2.5px solid var(--blue);
+  border-radius:24px;
+  background:white;
+  box-shadow:0 28px 70px rgba(8,49,95,.28);
+  overflow:hidden;
+}
+.modal-head{
+  padding:18px 20px;
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  background:linear-gradient(135deg,var(--navy),var(--blue));
+  color:white;
+}
+.modal-head h2{margin:0;color:white;font-size:20px;font-weight:800}
+.modal-head p{margin:5px 0 0;color:var(--blue-100);font-size:12px;font-weight:600}
+.modal-close{
+  width:34px;
+  height:34px;
+  border:1px solid rgba(255,255,255,.38);
+  border-radius:12px;
+  background:rgba(255,255,255,.14);
+  color:white;
+  font-weight:800;
+  cursor:pointer;
+}
+.modal-body{
+  padding:18px 20px 20px;
+  display:grid;
+  gap:12px;
+}
+.detail-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.detail{
+  padding:11px 12px;
+  border:1.5px solid var(--line);
+  border-radius:16px;
+  background:var(--blue-50);
+}
+.detail small{
+  display:block;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.detail b{
+  display:block;
+  margin-top:3px;
+  color:var(--navy);
+  font-size:15px;
+  font-weight:800;
+}
+.note{
+  margin:0;
+  padding:12px;
+  border:1.5px solid var(--line);
+  border-radius:16px;
+  background:var(--blue-50);
+  color:var(--muted);
+  font-size:12px;
+  font-weight:600;
+  line-height:1.4;
+}
+
+@keyframes fadeSlide{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes growX{
+  from{transform:scaleX(0)}
+  to{transform:scaleX(1)}
+}
+@keyframes growY{
+  from{transform:scaleY(0)}
+  to{transform:scaleY(1)}
+}
+@keyframes popIn{
+  from{opacity:.2;transform:scale(.92)}
+  to{opacity:1;transform:scale(1)}
+}
+
+@media(max-width:1180px){
+  .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid{grid-template-columns:1fr}
+  .controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:1000px){
+  body{padding-bottom:82px;background-attachment:scroll}
+  .app{grid-template-columns:1fr}
+  .sidebar{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    top:auto;
+    z-index:80;
+    display:block;
+    width:auto;
+    padding:8px 10px max(8px,env(safe-area-inset-bottom));
+    border:0;
+    border-top:1px solid rgba(255,255,255,.46);
+    background:linear-gradient(90deg,color-mix(in srgb,var(--blue) 80%,var(--navy) 20%),var(--blue-600));
+    box-shadow:0 -18px 44px rgba(11,31,77,.26),inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .sidebar:hover{width:auto;padding:8px 10px max(8px,env(safe-area-inset-bottom))}
+  .brand{display:none}
+  .nav{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:4px;
+    width:min(760px,100%);
+    margin:0 auto;
+  }
+  .nav a,.sidebar:hover .nav a{
+    display:grid;
+    place-items:center;
+    gap:2px;
+    min-height:48px;
+    padding:6px 2px;
+    border-radius:16px;
+    font-size:8px;
+    line-height:1;
+    text-align:center;
+  }
+  .nav-icon{width:auto;min-width:0;font-size:14px}
+  .topbar{min-height:104px;margin:15px 16px 0;padding:15px 23px}
+  .content{width:calc(100% - 32px)}
+  .card{border-width:2px;border-radius:14px}
+  .bar-row{grid-template-columns:110px minmax(0,1fr) 58px;gap:7px}
+}
+
+@media(max-width:680px){
+  .topbar{display:grid}
+  .topbar::before{width:100%;clip-path:none}
+  .topbar::after{display:none}
+  .page-title{max-width:100%}
+  .status-pill{width:100%;text-align:left}
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .controls{grid-template-columns:1fr}
+  .donut-layout{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .card-header{display:block}
+  .bar-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">InsightED</div>
+    <nav class="nav" aria-label="CCTV dashboard navigation">
+      <a class="active" href="#" data-view="overview"><span class="nav-icon">⌂</span>Overview</a>
+      <a href="#" data-view="drilldown"><span class="nav-icon">▤</span>Drilldown</a>
+      <a href="#" data-view="schools"><span class="nav-icon">▧</span>Schools</a>
+      <a href="#" data-view="issues"><span class="nav-icon">!</span>Issues</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="page-title">
+        <p class="eyebrow">Unit 9 Safety · CCTV Inventory Monitoring</p>
+        <h1>Regional CCTV <span>Inventory Dashboard</span></h1>
+        <p>Tracks working, broken, spare, and attention-needed CCTV records by region, division, and school using Unit 9 Safety CCTV fields.</p>
+      </div>
+      <section class="status-pill">
+        <small>Schema basis</small>
+        <strong>unit9_safety CSV</strong>
+        <span>school_id · iern · CCTV checklist · CCTV counts</span>
+      </section>
+    </header>
+
+    <section class="content">
+      <section class="card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div>
+              <h2>Data Controls</h2>
+              <p class="card-subtitle">This version follows the drilldown sequence Region → Division → Municipality / Legislative District → School District, uses a matrix heat map, and paginates the school table so the app does not render the entire CSV at once.</p>
+            </div>
+          </div>
+
+          <div class="controls">
+            <label>
+              <span>Region</span>
+              <select id="regionSelect" class="select"></select>
+            </label>
+            <label>
+              <span>Division</span>
+              <select id="divisionSelect" class="select"></select>
+            </label>
+            <label>
+              <span>3rd drilldown</span>
+              <select id="geoModeSelect" class="select">
+                <option value="municipality">Municipality</option>
+                <option value="legislative_district">Legislative district</option>
+              </select>
+            </label>
+            <label>
+              <span>CCTV Status</span>
+              <select id="statusSelect" class="select">
+                <option value="all">All CCTV records</option>
+                <option value="hasWorking">Has working CCTV</option>
+                <option value="hasBroken">Has broken CCTV</option>
+                <option value="needsAttention">Needs attention</option>
+                <option value="noInventory">No CCTV inventory</option>
+              </select>
+            </label>
+            <button id="resetBtn" class="button" type="button">Reset</button>
+          </div>
+          <p class="file-note" id="dataSourceNote">Loading Unit 9 CSV file: unit9_safety_202606250901.csv. Drilldown fields come only from CSV columns: region, division, municipality or legislative district, and school district.</p>
+        </div>
+      </section>
+
+      <section class="kpi-grid" id="kpiGrid"></section>
+
+      <section class="grid">
+        <article class="card wide" data-panel="overview drilldown">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <h2 id="barTitle">CCTV Inventory by Region</h2>
+                <p class="card-subtitle">Drill down from region to division, then municipality or legislative district, and finally school district. Toggle heat map to convert the stacked bars into a matrix view.</p>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <span class="tag info" id="scopeTag">Regional view</span>
+                <button id="heatMapToggle" class="button secondary" type="button">Heat map</button>
+              </div>
+            </div>
+            <div id="drillTrail" class="drill-row"></div>
+            <div class="legend">
+              <span class="legend-item"><i class="dot" style="background:#16A34A"></i>Working</span>
+              <span class="legend-item"><i class="dot" style="background:#B91C1C"></i>Broken</span>
+              <span class="legend-item"><i class="dot" style="background:#FBBF24"></i>Spares</span>
+              <span class="legend-item"><i class="dot" style="background:#7C3AED"></i>Needs attention</span>
+              <span class="legend-item"><i class="dot" style="background:#475569"></i>No inventory</span>
+            </div>
+            <div id="inventoryBars" class="bars"></div>
+          </div>
+        </article>
+
+        <article class="card" data-panel="overview issues">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <h2>CCTV Condition Share</h2>
+                <p class="card-subtitle">Working, broken, spare, and no-inventory composition in the current scope.</p>
+              </div>
+            </div>
+            <div class="donut-layout">
+              <div id="conditionDonut" class="donut"></div>
+              <div id="conditionTable" class="table-wrap"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card" data-panel="overview issues">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <h2>Issue Summary</h2>
+                <p class="card-subtitle">Counts of schools with CCTV readiness concerns.</p>
+              </div>
+            </div>
+            <div id="issueHistogram" class="histogram"></div>
+          </div>
+        </article>
+
+        <article class="card wide" data-panel="overview schools issues">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <h2>School CCTV Inventory</h2>
+                <p class="card-subtitle">Click a school row to inspect CCTV counts, checklist status, and remarks.</p>
+              </div>
+              <label style="width:min(320px,100%)">
+                <span>Search school / name / remarks</span>
+                <input id="schoolSearch" class="search" type="search" placeholder="Search school ID, school name, location, CCTV remarks..." />
+              </label>
+            </div>
+            <div class="table-controls" id="schoolTableControlsTop"></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th><button class="sort-button" type="button" data-sort-key="region">Region <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="division">Division <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="school_id">School ID <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="school_name">School Name <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="working">Working <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="broken">Broken <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="spare">Spares <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="recording">Recording <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="dvr">DVR Room <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="wires">Wires <span class="sort-icon">↕</span></button></th>
+                    <th><button class="sort-button" type="button" data-sort-key="attention">Attention <span class="sort-icon">↕</span></button></th>
+                  </tr>
+                  <tr>
+                    <th><input class="column-filter" type="search" data-column-filter="region" placeholder="Filter region"></th>
+                    <th><input class="column-filter" type="search" data-column-filter="division" placeholder="Filter division"></th>
+                    <th><input class="column-filter" type="search" data-column-filter="school_id" placeholder="Filter ID"></th>
+                    <th><input class="column-filter" type="search" data-column-filter="school_name" placeholder="Filter school"></th>
+                    <th><input class="column-filter" type="search" data-column-filter="working" placeholder="Filter #"></th>
+                    <th><input class="column-filter" type="search" data-column-filter="broken" placeholder="Filter #"></th>
+                    <th><input class="column-filter" type="search" data-column-filter="spare" placeholder="Filter #"></th>
+                    <th>
+                      <select class="column-filter" data-column-filter="recording">
+                        <option value="">All</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                        <option value="N/A">N/A</option>
+                        <option value="Blank">Blank</option>
+                      </select>
+                    </th>
+                    <th>
+                      <select class="column-filter" data-column-filter="dvr">
+                        <option value="">All</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                        <option value="N/A">N/A</option>
+                        <option value="Blank">Blank</option>
+                      </select>
+                    </th>
+                    <th>
+                      <select class="column-filter" data-column-filter="wires">
+                        <option value="">All</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                        <option value="N/A">N/A</option>
+                        <option value="Blank">Blank</option>
+                      </select>
+                    </th>
+                    <th>
+                      <select class="column-filter" data-column-filter="attention">
+                        <option value="">All</option>
+                        <option value="Review">Review</option>
+                        <option value="OK">OK</option>
+                      </select>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="schoolTableBody"></tbody>
+              </table>
+            </div>
+            <div class="table-controls" id="schoolTableControlsBottom"></div>
+          </div>
+        </article>
+      </section>
+    </section>
+  </main>
+</div>
+
+<div id="schoolModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <section class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="modalTitle">School CCTV Details</h2>
+        <p id="modalMeta">CCTV inventory and checklist details.</p>
+      </div>
+      <button class="modal-close" type="button" onclick="closeSchoolModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid" id="modalDetails"></div>
+      <p class="note" id="modalRemarks">No remarks.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const CSV_FILE_NAME = "unit9_safety_202606250901.csv";
+const CSV_FILE_CANDIDATES = [
+  CSV_FILE_NAME,
+  "./" + CSV_FILE_NAME,
+  "data/" + CSV_FILE_NAME,
+  "./data/" + CSV_FILE_NAME
+];
+const SAMPLE_CSV = `school_id,iern,u9_cctv_recording_clear,u9_dvr_room_cool_locked,u9_cctv_wires_protected,u9_remarks,u9_cctv_working,u9_cctv_broken,u9_cctv_spares,unit9_completed,unit9_updated_at,school_yr
+108694,2026-18458,yes,yes,yes,,16,0,0,true,2026-05-11 13:45:36.055 +0800,SY 25-26
+108696,2026-18459,yes,yes,yes,Minor repair of wirings,8,0,0,true,2026-05-05 14:50:47.141 +0800,SY 25-26
+108701,2026-18468,no,no,yes,relocation of wires.,2,0,0,true,2026-05-05 10:53:09.319 +0800,SY 25-26
+108704,2026-18471,yes,no,no,N/a,3,0,0,true,2026-05-13 03:57:49.771 +0800,SY 25-26
+108719,2026-18483,yes,yes,no,near the river and fault line,5,0,0,true,2026-05-05 23:25:21.662 +0800,SY 25-26
+108721,2026-18485,no,yes,yes,,2,1,0,true,2026-05-06 15:20:33.956 +0800,SY 25-26
+108725,2026-18489,no,yes,no,,6,2,0,true,2026-05-06 11:57:09.219 +0800,SY 25-26
+108730,2026-18501,yes,yes,yes,,4,0,0,true,2026-05-06 09:47:41.516 +0800,SY 25-26
+108752,2026-18529,yes,yes,yes,,8,0,0,true,2026-05-21 09:24:33.903 +0800,SY 25-26
+108759,2026-18536,yes,yes,yes,,16,4,0,true,2026-05-05 12:20:06.269 +0800,SY 25-26
+108767,2026-18548,yes,yes,yes,"Electrical over load, dilapidated classrooms",10,2,0,true,2026-05-21 13:52:23.778 +0800,SY 25-26
+108770,2026-18549,yes,yes,no,1 building is landslide prone area,4,0,0,true,2026-05-20 10:50:25.545 +0800,SY 25-26
+108772,2026-18551,yes,no,no,,9,0,0,true,2026-05-19 16:40:51.153 +0800,SY 25-26
+108789,2026-18571,no,yes,no,Inspection of wirings,2,2,0,true,2026-05-06 10:16:37.299 +0800,SY 25-26
+108790,2026-18572,yes,yes,yes,Need separate breaker for each classroom.,4,0,0,true,2026-05-15 16:10:09.573 +0800,SY 25-26
+108791,2026-18573,yes,no,no,No DCP Packages from DepEd,16,0,0,true,2026-05-19 22:36:29.005 +0800,SY 25-26
+108795,2026-18576,no,no,no,No AVRs for the computer laboratory.,2,0,0,true,2026-05-06 14:30:42.545 +0800,SY 25-26
+108796,2026-18577,yes,n/a,yes,For rehabilitation of electrical wiring,7,1,0,true,2026-05-19 14:52:55.189 +0800,SY 25-26
+108801,2026-18588,yes,yes,yes,N/A,1,0,0,true,2026-05-19 18:26:42.700 +0800,SY 25-26
+108804,2026-18591,yes,yes,yes,,0,0,0,true,2026-05-19 14:39:19.967 +0800,SY 25-26
+108805,2026-18592,yes,yes,yes,,15,0,1,true,2026-04-28 17:40:33.355 +0800,SY 25-26
+108808,2026-18594,yes,no,yes,,0,0,2,true,2026-05-04 16:00:03.933 +0800,SY 25-26
+108811,2026-18596,n/a,n/a,n/a,,0,0,0,true,2026-05-05 09:13:39.171 +0800,SY 25-26
+108812,2026-18597,yes,yes,yes,,0,0,0,true,2026-05-19 15:17:05.641 +0800,SY 25-26
+108834,2026-18623,yes,yes,yes,,1,0,0,true,2026-05-19 18:11:15.673 +0800,SY 25-26
+108835,2026-18624,no,n/a,no,,6,1,0,true,2026-05-04 11:32:20.242 +0800,SY 25-26
+106556,2026-15623,yes,no,no,Repair or replacement of CCTVs,0,4,0,true,2026-05-04 13:52:01.420 +0800,SY 25-26
+106562,2026-15632,n/a,n/a,n/a,The school is in need of CCTV equipment and Solar Lights,0,0,0,true,2026-05-06 10:23:25.701 +0800,SY 25-26
+106618,2026-15698,yes,yes,yes,Checking/repair of CCTV.,0,4,0,true,2026-05-04 16:33:42.779 +0800,SY 25-26
+106592,2026-15667,yes,yes,yes,None,8,0,0,true,2026-05-05 23:28:45.242 +0800,SY 25-26
+106603,2026-15678,yes,yes,yes,,2,0,0,true,2026-05-06 15:32:14.180 +0800,SY 25-26
+106638,2026-15720,yes,yes,yes,,1,0,1,true,2026-05-04 17:34:49.205 +0800,SY 25-26
+106542,2026-15610,yes,n/a,yes,,0,0,4,true,2026-05-05 09:20:51.300 +0800,SY 25-26
+106544,2026-15611,no,no,no,Most of the wirings in the school are old aged condition,0,4,0,true,2026-05-07 10:42:45.272 +0800,SY 25-26`;
+
+let rawRows = [];
+let drill = { region:null, division:null, geo:null, schoolDistrict:null };
+let geoMode = "municipality";
+let heatMapEnabled = false;
+let activeView = "overview";
+let schoolTableState = { page:1, pageSize:25, sortKey:"region", sortDirection:"asc", filters:{} };
+
+function parseCsv(text){
+  const rows = [];
+  let row = [], cell = "", quote = false;
+  for(let i=0;i<text.length;i++){
+    const ch = text[i], next = text[i+1];
+    if(ch === '"' && quote && next === '"'){ cell += '"'; i++; continue; }
+    if(ch === '"'){ quote = !quote; continue; }
+    if(ch === "," && !quote){ row.push(cell); cell = ""; continue; }
+    if((ch === "\n" || ch === "\r") && !quote){
+      if(ch === "\r" && next === "\n") i++;
+      row.push(cell);
+      if(row.some(v => String(v).trim() !== "")) rows.push(row);
+      row = []; cell = "";
+      continue;
+    }
+    cell += ch;
+  }
+  if(cell || row.length){ row.push(cell); if(row.some(v => String(v).trim() !== "")) rows.push(row); }
+  if(!rows.length) return [];
+  const headers = rows.shift().map(h => h.trim());
+  validateUnit9CsvHeaders(headers);
+  return rows.map(values => {
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = (values[i] ?? "").trim());
+    return normalizeRow(obj);
+  });
+}
+
+function validateUnit9CsvHeaders(headers){
+  const normalized = headers.map(h => h.trim().toLowerCase());
+  const required = [
+    "school_id",
+    "iern",
+    "u9_cctv_recording_clear",
+    "u9_dvr_room_cool_locked",
+    "u9_cctv_wires_protected",
+    "u9_cctv_working",
+    "u9_cctv_broken",
+    "u9_cctv_spares",
+    "unit9_completed",
+    "unit9_updated_at",
+    "school_yr"
+  ];
+  const missing = required.filter(field => !normalized.includes(field));
+  if(missing.length){
+    throw new Error("This dashboard requires the Unit 9 Safety CSV. Missing required field(s): " + missing.join(", "));
+  }
+}
+
+function normalizeRow(r){
+  const schoolId = r.school_id || r.SchoolID || r.schoolId || "";
+  const working = number(r.u9_cctv_working);
+  const broken = number(r.u9_cctv_broken);
+  const spare = number(r.u9_cctv_spares);
+  const remarks = r.u9_remarks || "";
+  const recording = status(r.u9_cctv_recording_clear);
+  const dvr = status(r.u9_dvr_room_cool_locked);
+  const wires = status(r.u9_cctv_wires_protected);
+  const noInventory = working === 0 && broken === 0 && spare === 0;
+  const textAttention = /cctv|camera|recording|dvr|repair|replacement/i.test(remarks);
+  const issue = broken > 0 || recording === "no" || dvr === "no" || wires === "no" || textAttention;
+  return {
+    school_id: schoolId,
+    iern: r.iern || r.IERN || "",
+    school_name: cleanLocation(r.school_name || r.schoolName || r.School_Name || r["School Name"] || r.school || r.School, "Unnamed school"),
+    region: cleanLocation(r.region || r.Region),
+    division: cleanLocation(r.division || r.Division),
+    municipality: cleanLocation(r.municipality || r.Municipality || r.city || r.City || r.lgu || r.LGU),
+    legislative_district: cleanLocation(r.legislative_district || r.Legislative_District || r.legislativeDistrict || r["Legislative District"] || r.congressional_district || r.Congressional_District || r["Congressional District"]),
+    school_district: cleanLocation(r.school_district || r.School_District || r.schoolDistrict || r["School District"] || r.district || r.District),
+    working,
+    broken,
+    spare,
+    recording,
+    dvr,
+    wires,
+    remarks,
+    unit9_completed: r.unit9_completed || "",
+    updated_at: r.unit9_updated_at || r.updated_at || "",
+    school_yr: r.school_yr || "",
+    noInventory,
+    issue
+  };
+}
+
+function cleanLocation(v,fallback="Unassigned"){ return String(v || fallback).trim() || fallback; }
+function number(v){ return Math.max(0, Number(String(v ?? "0").replace(/[^\d.-]/g,"")) || 0); }
+function status(v){
+  const s = String(v || "").trim().toLowerCase();
+  if(["yes","true","1"].includes(s)) return "yes";
+  if(["no","false","0"].includes(s)) return "no";
+  if(["n/a","na","not applicable"].includes(s)) return "n/a";
+  return "blank";
+}
+function fmt(v){ return Number(v || 0).toLocaleString(); }
+function pct(v){ return Math.round(v || 0) + "%"; }
+
+function filteredRows(){
+  const q = schoolSearch.value.trim().toLowerCase();
+  const region = regionSelect.value;
+  const division = divisionSelect.value;
+  const statusFilter = statusSelect.value;
+  return rawRows.filter(r => {
+    if(region !== "all" && r.region !== region) return false;
+    if(division !== "all" && r.division !== division) return false;
+    if(drill.region && r.region !== drill.region) return false;
+    if(drill.division && r.division !== drill.division) return false;
+    if(drill.geo && r[geoMode] !== drill.geo) return false;
+    if(drill.schoolDistrict && r.school_district !== drill.schoolDistrict) return false;
+    if(statusFilter === "hasWorking" && r.working <= 0) return false;
+    if(statusFilter === "hasBroken" && r.broken <= 0) return false;
+    if(statusFilter === "needsAttention" && !r.issue) return false;
+    if(statusFilter === "noInventory" && !r.noInventory) return false;
+    if(q){
+      const haystack = [r.school_id,r.school_name,r.iern,r.region,r.division,r.municipality,r.legislative_district,r.school_district,r.remarks].join(" ").toLowerCase();
+      if(!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function aggregate(rows, key){
+  const map = new Map();
+  rows.forEach(r => {
+    const name = r[key] || "Unassigned";
+    if(!map.has(name)){
+      map.set(name,{ name, schools:0, working:0, broken:0, spare:0, issue:0, noInventory:0, recordingNo:0, dvrNo:0, wiresNo:0 });
+    }
+    const g = map.get(name);
+    g.schools++;
+    g.working += r.working;
+    g.broken += r.broken;
+    g.spare += r.spare;
+    if(r.issue) g.issue++;
+    if(r.noInventory) g.noInventory++;
+    if(r.recording === "no") g.recordingNo++;
+    if(r.dvr === "no") g.dvrNo++;
+    if(r.wires === "no") g.wiresNo++;
+  });
+  return Array.from(map.values()).sort((a,b) => a.name.localeCompare(b.name));
+}
+
+function totals(rows){
+  return rows.reduce((t,r) => {
+    t.schools++;
+    t.working += r.working;
+    t.broken += r.broken;
+    t.spare += r.spare;
+    if(r.issue) t.issue++;
+    if(r.noInventory) t.noInventory++;
+    if(r.recording === "no") t.recordingNo++;
+    if(r.dvr === "no") t.dvrNo++;
+    if(r.wires === "no") t.wiresNo++;
+    return t;
+  },{schools:0,working:0,broken:0,spare:0,issue:0,noInventory:0,recordingNo:0,dvrNo:0,wiresNo:0});
+}
+
+function renderControls(){
+  const regions = ["all",...Array.from(new Set(rawRows.map(r => r.region))).sort()];
+  const oldRegion = regionSelect.value || "all";
+  regionSelect.innerHTML = regions.map(r => `<option value="${r}">${r === "all" ? "All regions" : r}</option>`).join("");
+  regionSelect.value = regions.includes(oldRegion) ? oldRegion : "all";
+
+  const divisions = ["all",...Array.from(new Set(rawRows.filter(r => regionSelect.value === "all" || r.region === regionSelect.value).map(r => r.division))).sort()];
+  const oldDivision = divisionSelect.value || "all";
+  divisionSelect.innerHTML = divisions.map(d => `<option value="${d}">${d === "all" ? "All divisions" : d}</option>`).join("");
+  divisionSelect.value = divisions.includes(oldDivision) ? oldDivision : "all";
+  geoModeSelect.value = geoMode;
+}
+
+function renderKpis(rows){
+  const t = totals(rows);
+  const totalCctvInventory = t.working + t.broken + t.spare;
+  const cards = [
+    ["Total Schools",fmt(t.schools),"schools in current scope","info"],
+    ["Total CCTV Inventory",fmt(totalCctvInventory),"working + broken + spares","info"],
+    ["Working",fmt(t.working),"operational CCTV units","ok"],
+    ["Broken",fmt(t.broken),"non-operational CCTV units","risk"],
+    ["Spares",fmt(t.spare),"available CCTV spares","warn"],
+    ["Attention",fmt(t.issue),"schools with CCTV issues","purple"],
+    ["No Inventory",fmt(t.noInventory),"zero CCTV counts","slate"]
+  ];
+  kpiGrid.innerHTML = cards.map(c => `
+    <article class="card kpi-card">
+      <div class="card-inner">
+        <div class="kpi-top"><span class="tag ${c[3]}">${c[0]}</span></div>
+        <h2 class="kpi-number">${c[1]}</h2>
+        <p class="kpi-label">${c[0]}</p>
+        <p class="kpi-sub">${c[2]}</p>
+      </div>
+    </article>
+  `).join("");
+}
+
+function renderTrail(){
+  const geoLabel = geoMode === "municipality" ? "Municipality" : "Legislative district";
+  const crumbs = [`<button class="crumb ${!drill.region ? "active" : ""}" onclick="setDrill(null,null,null,null)">All regions</button>`];
+  if(drill.region) crumbs.push(`<button class="crumb ${!drill.division ? "active" : ""}" onclick="setDrill('${escapeJs(drill.region)}',null,null,null)">${drill.region}</button>`);
+  if(drill.division) crumbs.push(`<button class="crumb ${!drill.geo ? "active" : ""}" onclick="setDrill('${escapeJs(drill.region)}','${escapeJs(drill.division)}',null,null)">${drill.division}</button>`);
+  if(drill.geo) crumbs.push(`<button class="crumb ${!drill.schoolDistrict ? "active" : ""}" onclick="setDrill('${escapeJs(drill.region)}','${escapeJs(drill.division)}','${escapeJs(drill.geo)}',null)">${geoLabel}: ${drill.geo}</button>`);
+  if(drill.schoolDistrict) crumbs.push(`<button class="crumb active">School district: ${drill.schoolDistrict}</button>`);
+  drillTrail.innerHTML = crumbs.join("");
+}
+
+function setDrill(region,division,geo,schoolDistrict){
+  drill.region = region;
+  drill.division = division;
+  drill.geo = geo;
+  drill.schoolDistrict = schoolDistrict;
+  schoolTableState.page = 1;
+  renderAll();
+}
+
+function renderBars(rows){
+  let level = "region";
+  let title = "CCTV Inventory by Region";
+  let tag = "Region";
+  if(drill.region){ level = "division"; title = "CCTV Inventory by Division"; tag = "Division"; }
+  if(drill.division){ level = geoMode; title = geoMode === "municipality" ? "CCTV Inventory by Municipality" : "CCTV Inventory by Legislative District"; tag = geoMode === "municipality" ? "Municipality" : "Legislative district"; }
+  if(drill.geo){ level = "school_district"; title = "CCTV Inventory by School District"; tag = "School district"; }
+  if(drill.schoolDistrict){ level = "school_district"; title = "Selected School District"; tag = "End of drilldown"; }
+
+  barTitle.textContent = title;
+  scopeTag.textContent = tag;
+  heatMapToggle.classList.toggle("active",heatMapEnabled);
+  heatMapToggle.textContent = heatMapEnabled ? "Stacked bars" : "Heat map";
+
+  const groups = aggregate(rows,level);
+  inventoryBars.className = heatMapEnabled ? "heatmap-matrix" : "bars";
+  inventoryBars.innerHTML = heatMapEnabled ? `
+    <div class="matrix-row matrix-header">
+      <div class="matrix-cell">Location</div>
+      <div class="matrix-cell">Working</div>
+      <div class="matrix-cell">Broken</div>
+      <div class="matrix-cell">Spares</div>
+      <div class="matrix-cell">Attention</div>
+      <div class="matrix-cell">No inventory</div>
+    </div>
+  ` : "";
+
+  groups.forEach((g,i) => {
+    const total = Math.max(g.working + g.broken + g.spare + g.noInventory,1);
+    const issueRate = g.issue / Math.max(g.schools,1) * 100;
+    const row = document.createElement("div");
+    row.style.animationDelay = `${i * 28}ms`;
+
+    if(heatMapEnabled){
+      const heatClass = g.schools === 0 ? "heat-none" : issueRate >= 50 ? "heat-high" : issueRate >= 20 ? "heat-mid" : "heat-low";
+      row.className = "matrix-row drillable";
+      row.innerHTML = `
+        <div class="matrix-cell matrix-label ${heatClass}"><strong>${g.name}</strong><small>${fmt(g.schools)} schools · ${pct(issueRate)} need attention</small></div>
+        <div class="matrix-cell heat-low"><b>${fmt(g.working)}</b><small>Working</small></div>
+        <div class="matrix-cell ${g.broken ? "heat-high" : "heat-none"}"><b>${fmt(g.broken)}</b><small>Broken</small></div>
+        <div class="matrix-cell ${g.spare ? "heat-mid" : "heat-none"}"><b>${fmt(g.spare)}</b><small>Spares</small></div>
+        <div class="matrix-cell ${heatClass}"><b>${fmt(g.issue)}</b><small>Attention</small></div>
+        <div class="matrix-cell ${g.noInventory ? "heat-high" : "heat-none"}"><b>${fmt(g.noInventory)}</b><small>No inventory</small></div>
+      `;
+    }else{
+      row.className = "bar-row drillable";
+      row.innerHTML = `
+        <span>${g.name}</span>
+        <div class="track" title="Working ${fmt(g.working)} · Broken ${fmt(g.broken)} · Spares ${fmt(g.spare)} · No inventory ${fmt(g.noInventory)}">
+          <div class="segment seg-working" style="width:${g.working/total*100}%">${g.working ? fmt(g.working) : ""}</div>
+          <div class="segment seg-broken" style="width:${g.broken/total*100}%">${g.broken ? fmt(g.broken) : ""}</div>
+          <div class="segment seg-spare" style="width:${g.spare/total*100}%">${g.spare ? fmt(g.spare) : ""}</div>
+          <div class="segment seg-none" style="width:${g.noInventory/total*100}%">${g.noInventory ? fmt(g.noInventory) : ""}</div>
+        </div>
+        <b>${fmt(g.schools)} school${g.schools === 1 ? "" : "s"}</b>
+      `;
+    }
+
+    row.onclick = () => {
+      if(level === "region") setDrill(g.name,null,null,null);
+      else if(level === "division") setDrill(drill.region,g.name,null,null);
+      else if(level === geoMode) setDrill(drill.region,drill.division,g.name,null);
+      else if(level === "school_district") setDrill(drill.region,drill.division,drill.geo,g.name);
+    };
+    inventoryBars.appendChild(row);
+  });
+}
+
+function renderDonut(rows){
+  const t = totals(rows);
+  const values = [
+    { label:"Working", value:t.working, color:"#16A34A" },
+    { label:"Broken", value:t.broken, color:"#B91C1C" },
+    { label:"Spares", value:t.spare, color:"#FBBF24" },
+    { label:"No inventory", value:t.noInventory, color:"#475569" }
+  ];
+  const total = Math.max(values.reduce((s,v) => s + v.value,0),1);
+  let start = 0;
+  const stops = values.map(v => {
+    const p = v.value / total * 100;
+    const stop = `${v.color} ${start}% ${start+p}%`;
+    start += p;
+    return stop;
+  });
+  conditionDonut.style.background = `conic-gradient(${stops.join(",")})`;
+  conditionDonut.innerHTML = `<div class="donut-center">${fmt(total)}<br>records</div>`;
+  conditionTable.innerHTML = `<table><thead><tr><th>Segment</th><th>Value</th><th>Share</th></tr></thead><tbody>
+    ${values.map(v => `<tr><td><span class="dot" style="background:${v.color};margin-right:7px"></span>${v.label}</td><td><b>${fmt(v.value)}</b></td><td><b>${pct(v.value/total*100)}</b></td></tr>`).join("")}
+  </tbody></table>`;
+}
+
+function renderHistogram(rows){
+  const t = totals(rows);
+  const items = [
+    { label:"Recording issue", value:t.recordingNo, color:"#B91C1C" },
+    { label:"DVR room issue", value:t.dvrNo, color:"#D97706" },
+    { label:"Wire issue", value:t.wiresNo, color:"#7C3AED" },
+    { label:"Broken units", value:t.broken, color:"#EF4444" },
+    { label:"Needs attention", value:t.issue, color:"#075985" }
+  ];
+  const max = Math.max(...items.map(i => i.value),1);
+  issueHistogram.style.setProperty("--cols",items.length);
+  issueHistogram.innerHTML = items.map((i,idx) => `
+    <div class="hist-col" style="animation-delay:${idx*40}ms">
+      <div class="hist-area">
+        <div class="hist-wrap" style="height:${Math.max(i.value/max*100,8)}%">
+          <div class="hist-value">${fmt(i.value)}</div>
+          <div class="hist-bar" style="height:calc(100% - 22px);background:${i.color}"></div>
+        </div>
+      </div>
+      <div class="hist-label">${i.label}</div>
+    </div>
+  `).join("");
+}
+
+function tableColumnValue(r,key){
+  const values = {
+    region:r.region,
+    division:r.division,
+    school_id:r.school_id,
+    school_name:r.school_name,
+    working:r.working,
+    broken:r.broken,
+    spare:r.spare,
+    recording:labelStatus(r.recording),
+    dvr:labelStatus(r.dvr),
+    wires:labelStatus(r.wires),
+    attention:r.issue ? "Review" : "OK"
+  };
+  return values[key] ?? "";
+}
+
+function isNumericTableColumn(key){ return ["working","broken","spare"].includes(key); }
+
+function applySchoolTableColumnFilters(rows){
+  const filters = schoolTableState.filters || {};
+  return rows.filter(r => Object.entries(filters).every(([key,raw]) => {
+    const filter = String(raw || "").trim().toLowerCase();
+    if(!filter) return true;
+    const value = tableColumnValue(r,key);
+    if(["recording","dvr","wires","attention"].includes(key)){
+      return String(value).toLowerCase() === filter;
+    }
+    return String(value).toLowerCase().includes(filter);
+  }));
+}
+
+function sortSchoolTableRows(rows){
+  const key = schoolTableState.sortKey || "region";
+  const direction = schoolTableState.sortDirection === "desc" ? -1 : 1;
+  return rows.sort((a,b) => {
+    const av = tableColumnValue(a,key);
+    const bv = tableColumnValue(b,key);
+    if(isNumericTableColumn(key)){
+      return ((Number(av) || 0) - (Number(bv) || 0)) * direction;
+    }
+    const primary = String(av).localeCompare(String(bv),undefined,{ numeric:true, sensitivity:"base" }) * direction;
+    if(primary) return primary;
+    return a.school_id.localeCompare(b.school_id,undefined,{ numeric:true, sensitivity:"base" });
+  });
+}
+
+function syncSchoolTableHeader(){
+  document.querySelectorAll("[data-sort-key]").forEach(btn => {
+    const active = btn.dataset.sortKey === schoolTableState.sortKey;
+    btn.classList.toggle("active",active);
+    const icon = btn.querySelector(".sort-icon");
+    if(icon) icon.textContent = active ? (schoolTableState.sortDirection === "asc" ? "▲" : "▼") : "↕";
+  });
+  document.querySelectorAll("[data-column-filter]").forEach(input => {
+    if(document.activeElement !== input){
+      input.value = schoolTableState.filters?.[input.dataset.columnFilter] || "";
+    }
+  });
+}
+
+function renderSchoolTable(rows){
+  const list = sortSchoolTableRows(applySchoolTableColumnFilters(rows.slice()));
+  const totalPages = Math.max(1,Math.ceil(list.length / schoolTableState.pageSize));
+  schoolTableState.page = Math.min(Math.max(1,schoolTableState.page),totalPages);
+  const start = (schoolTableState.page - 1) * schoolTableState.pageSize;
+  const pageRows = list.slice(start,start + schoolTableState.pageSize);
+
+  schoolTableBody.innerHTML = pageRows.map((r,i) => `
+    <tr class="school-row" onclick="openSchoolModal('${escapeJs(r.school_id)}')" style="animation-delay:${Math.min(i*12,160)}ms">
+      <td>${r.region}</td>
+      <td>${r.division}</td>
+      <td><b>${r.school_id}</b></td>
+      <td>${r.school_name}</td>
+      <td>${fmt(r.working)}</td>
+      <td>${fmt(r.broken)}</td>
+      <td>${fmt(r.spare)}</td>
+      <td>${statusBadge(r.recording)}</td>
+      <td>${statusBadge(r.dvr)}</td>
+      <td>${statusBadge(r.wires)}</td>
+      <td>${r.issue ? `<span class="update-age risk">Review</span>` : `<span class="update-age ok">OK</span>`}</td>
+    </tr>
+  `).join("");
+
+  syncSchoolTableHeader();
+  renderSchoolTableControls(list.length,totalPages,start,pageRows.length);
+}
+
+function renderSchoolTableControls(totalRows,totalPages,start,count){
+  const label = totalRows ? `Rows ${fmt(start + 1)}–${fmt(start + count)} of ${fmt(totalRows)} · Page ${fmt(schoolTableState.page)} of ${fmt(totalPages)}` : "No school records";
+  const controls = `
+    <span class="table-page-label">${label}</span>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <select class="select" data-page-size>
+        <option value="10"${schoolTableState.pageSize===10?" selected":""}>10 rows</option>
+        <option value="25"${schoolTableState.pageSize===25?" selected":""}>25 rows</option>
+        <option value="50"${schoolTableState.pageSize===50?" selected":""}>50 rows</option>
+        <option value="100"${schoolTableState.pageSize===100?" selected":""}>100 rows</option>
+      </select>
+      <button class="button secondary" type="button" data-page="prev"${schoolTableState.page<=1?" disabled":""}>Prev</button>
+      <button class="button secondary" type="button" data-page="next"${schoolTableState.page>=totalPages?" disabled":""}>Next</button>
+    </div>
+  `;
+  [schoolTableControlsTop,schoolTableControlsBottom].forEach(el => {
+    el.innerHTML = controls;
+    el.querySelector("[data-page-size]").onchange = e => {
+      schoolTableState.pageSize = Number(e.target.value);
+      schoolTableState.page = 1;
+      renderAll();
+    };
+    el.querySelector("[data-page='prev']").onclick = () => {
+      schoolTableState.page = Math.max(1,schoolTableState.page - 1);
+      renderAll();
+    };
+    el.querySelector("[data-page='next']").onclick = () => {
+      schoolTableState.page = Math.min(totalPages,schoolTableState.page + 1);
+      renderAll();
+    };
+  });
+}
+
+function statusBadge(s){
+  if(s === "yes") return `<span class="update-age ok">Yes</span>`;
+  if(s === "no") return `<span class="update-age risk">No</span>`;
+  if(s === "n/a") return `<span class="update-age neutral">N/A</span>`;
+  return `<span class="update-age warn">Blank</span>`;
+}
+
+function openSchoolModal(id){
+  const r = rawRows.find(x => x.school_id === id);
+  if(!r) return;
+  modalTitle.textContent = `School ${r.school_id}`;
+  modalMeta.textContent = `${r.school_name} · ${r.region} · ${r.division} · ${r.municipality} · ${r.school_district}`;
+  modalDetails.innerHTML = [
+    ["School name",r.school_name],
+    ["Working CCTV",fmt(r.working)],
+    ["Broken CCTV",fmt(r.broken)],
+    ["Spare CCTV",fmt(r.spare)],
+    ["Recording clear",labelStatus(r.recording)],
+    ["DVR room cool / locked",labelStatus(r.dvr)],
+    ["CCTV wires protected",labelStatus(r.wires)],
+    ["Needs attention",r.issue ? "Yes" : "No"],
+    ["No inventory",r.noInventory ? "Yes" : "No"],
+    ["Updated at",r.updated_at || "—"]
+  ].map(([k,v]) => `<div class="detail"><small>${k}</small><b>${v}</b></div>`).join("");
+  modalRemarks.textContent = r.remarks || "No CCTV-related remarks recorded.";
+  schoolModal.classList.add("open");
+}
+
+function closeSchoolModal(){ schoolModal.classList.remove("open"); }
+function labelStatus(s){ return s === "yes" ? "Yes" : s === "no" ? "No" : s === "n/a" ? "N/A" : "Blank"; }
+function escapeJs(s){ return String(s || "").replace(/\\/g,"\\\\").replace(/'/g,"\\'"); }
+
+function switchView(view){
+  activeView = view;
+  document.querySelectorAll(".nav a").forEach(a => a.classList.toggle("active",a.dataset.view === view));
+  document.querySelectorAll("[data-panel]").forEach(el => {
+    el.style.display = el.dataset.panel.split(" ").includes(view) ? "" : "none";
+  });
+}
+
+function renderAll(){
+  renderControls();
+  const rows = filteredRows();
+  renderKpis(rows);
+  renderTrail();
+  renderBars(rows);
+  renderDonut(rows);
+  renderHistogram(rows);
+  renderSchoolTable(rows);
+  switchView(activeView);
+}
+
+async function fetchFirstAvailableCsv(){
+  const errors = [];
+  for(const url of CSV_FILE_CANDIDATES){
+    try{
+      const response = await fetch(url, { cache:"no-store" });
+      if(!response.ok) throw new Error(`HTTP ${response.status}`);
+      const text = await response.text();
+      return { url, text };
+    }catch(error){
+      errors.push(`${url}: ${error.message || error}`);
+    }
+  }
+  throw new Error(errors.join(" | "));
+}
+
+async function loadCsvFromAttachedFile(){
+  try{
+    if(dataSourceNote) dataSourceNote.textContent = `Loading Unit 9 CSV from the same folder as this HTML: ${CSV_FILE_NAME}...`;
+    const loaded = await fetchFirstAvailableCsv();
+    rawRows = parseCsv(loaded.text);
+    drill = { region:null, division:null, geo:null, schoolDistrict:null };
+    if(dataSourceNote) dataSourceNote.textContent = `Loaded ${fmt(rawRows.length)} rows from ${loaded.url}. Drilldown uses CSV values for region, division, municipality or legislative district, and school district. Missing location values are grouped as Unassigned.`;
+    renderAll();
+  }catch(error){
+    console.error("Unable to load the Unit 9 CSV from the same folder as the HTML.", error);
+    rawRows = [];
+    if(dataSourceNote) dataSourceNote.textContent = `Could not load ${CSV_FILE_NAME} from the same folder as this HTML. This usually happens when the page is opened through file:// or inside Notion, where browser security blocks local fetch. Put the HTML and CSV in the same folder and open them through a local web server, for example: python -m http.server 8000, then visit http://localhost:8000/.`;
+    renderAll();
+  }
+}
+
+if(window.csvFile){
+csvFile.addEventListener("change",e => {
+  const file = e.target.files?.[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      rawRows = parseCsv(String(reader.result || ""));
+      drill = { region:null, division:null, geo:null, schoolDistrict:null };
+      regionSelect.value = "all";
+      divisionSelect.value = "all";
+      if(dataSourceNote) dataSourceNote.textContent = `Loaded ${fmt(rawRows.length)} rows from the selected Unit 9 CSV fallback file.`;
+    }catch(error){
+      console.error("Selected file is not a valid Unit 9 Safety CSV.", error);
+      rawRows = [];
+      if(dataSourceNote) dataSourceNote.textContent = `Selected file was rejected because it is not a valid Unit 9 Safety CSV with the required CCTV fields.`;
+    }
+    renderAll();
+  };
+  reader.readAsText(file);
+});
+}
+
+regionSelect.addEventListener("change",() => { drill = { region:null, division:null, geo:null, schoolDistrict:null }; schoolTableState.page = 1; renderAll(); });
+divisionSelect.addEventListener("change",() => { drill = { region:null, division:null, geo:null, schoolDistrict:null }; schoolTableState.page = 1; renderAll(); });
+geoModeSelect.addEventListener("change",() => { geoMode = geoModeSelect.value; drill.geo = null; drill.schoolDistrict = null; schoolTableState.page = 1; renderAll(); });
+heatMapToggle.addEventListener("click",() => { heatMapEnabled = !heatMapEnabled; renderAll(); });
+statusSelect.addEventListener("change",() => { schoolTableState.page = 1; renderAll(); });
+schoolSearch.addEventListener("input",() => { schoolTableState.page = 1; renderAll(); });
+document.querySelectorAll("[data-sort-key]").forEach(btn => btn.addEventListener("click",() => {
+  const key = btn.dataset.sortKey;
+  if(schoolTableState.sortKey === key){
+    schoolTableState.sortDirection = schoolTableState.sortDirection === "asc" ? "desc" : "asc";
+  }else{
+    schoolTableState.sortKey = key;
+    schoolTableState.sortDirection = "asc";
+  }
+  schoolTableState.page = 1;
+  renderAll();
+}));
+document.querySelectorAll("[data-column-filter]").forEach(input => {
+  const handler = () => {
+    const key = input.dataset.columnFilter;
+    schoolTableState.filters[key] = input.value;
+    schoolTableState.page = 1;
+    renderAll();
+  };
+  input.addEventListener("input",handler);
+  input.addEventListener("change",handler);
+});
+resetBtn.addEventListener("click",() => {
+  drill = { region:null, division:null, geo:null, schoolDistrict:null };
+  regionSelect.value = "all";
+  divisionSelect.value = "all";
+  statusSelect.value = "all";
+  schoolSearch.value = "";
+  schoolTableState.page = 1;
+  schoolTableState.sortKey = "region";
+  schoolTableState.sortDirection = "asc";
+  schoolTableState.filters = {};
+  renderAll();
+});
+document.querySelectorAll(".nav a").forEach(a => a.addEventListener("click",e => {
+  e.preventDefault();
+  switchView(a.dataset.view);
+  a.blur();
+}));
+schoolModal.addEventListener("click",e => { if(e.target.id === "schoolModal") closeSchoolModal(); });
+
+loadCsvFromAttachedFile();
+</script>
+</body>
+</html>
