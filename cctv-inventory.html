@@ -317,6 +317,45 @@ label span{
   color:var(--navy);
   box-shadow:inset 0 -3px 0 rgba(8,49,95,.16);
 }
+.chart-toggle{
+  position:relative;
+  width:auto!important;
+  height:32px!important;
+  padding:7px 11px 7px 28px!important;
+  border:1.5px solid #DBEAFE!important;
+  border-radius:999px!important;
+  background:#F8FAFC!important;
+  color:var(--blue)!important;
+  box-shadow:none;
+  font-size:11px!important;
+  font-weight:800;
+  letter-spacing:.01em;
+}
+.chart-toggle::before{
+  content:"⇄";
+  position:absolute;
+  left:10px;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+}
+.chart-toggle:hover{
+  border-color:var(--blue-400)!important;
+  background:var(--blue-50)!important;
+  color:var(--navy)!important;
+}
+.chart-toggle.active{
+  border-color:#FDE68A!important;
+  background:#FFFBEB!important;
+  color:var(--amber)!important;
+  box-shadow:none;
+}
+.chart-toggle:focus-visible{
+  outline:2px solid var(--blue-400);
+  outline-offset:2px;
+}
 .button:disabled{
   opacity:.45;
   cursor:not-allowed;
@@ -1003,7 +1042,7 @@ td{color:#1E293B;font-weight:600}
               </div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <span class="tag info" id="scopeTag">Regional view</span>
-                <button id="heatMapToggle" class="button secondary" type="button">Heat map</button>
+                <button id="heatMapToggle" class="button secondary chart-toggle" type="button">Stacked bars</button>
               </div>
             </div>
             <div id="drillTrail" class="drill-row"></div>
@@ -1025,8 +1064,9 @@ td{color:#1E293B;font-weight:600}
                 <h2>CCTV Condition Share</h2>
                 <p class="card-subtitle">Working, broken, spare, and no-inventory composition in the current scope.</p>
               </div>
+              <button id="conditionChartToggle" class="button secondary chart-toggle" type="button" aria-label="Switch CCTV Condition Share chart type">Chart type: Donut</button>
             </div>
-            <div class="donut-layout">
+            <div id="conditionChartBody" class="donut-layout">
               <div id="conditionDonut" class="donut"></div>
               <div id="conditionTable" class="table-wrap"></div>
             </div>
@@ -1040,6 +1080,7 @@ td{color:#1E293B;font-weight:600}
                 <h2>Issue Summary</h2>
                 <p class="card-subtitle">Counts of schools with CCTV readiness concerns.</p>
               </div>
+              <button id="issueChartToggle" class="button secondary chart-toggle" type="button" aria-label="Switch Issue Summary chart type">Chart type: Histogram</button>
             </div>
             <div id="issueHistogram" class="histogram"></div>
           </div>
@@ -1194,6 +1235,8 @@ let drill = { region:null, division:null, geo:null, schoolDistrict:null };
 let geoMode = "municipality";
 let heatMapEnabled = false;
 let unitMode = "cctv";
+let conditionChartMode = "donut";
+let issueChartMode = "histogram";
 let activeView = "overview";
 let schoolTableState = { page:1, pageSize:25, sortKey:"region", sortDirection:"asc", filters:{} };
 
@@ -1449,7 +1492,7 @@ function renderBars(rows){
   barTitle.textContent = title;
   scopeTag.textContent = tag;
   heatMapToggle.classList.toggle("active",heatMapEnabled);
-  heatMapToggle.textContent = heatMapEnabled ? "Stacked bars" : "Heat map";
+  heatMapToggle.textContent = heatMapEnabled ? "Heat map" : "Stacked bars";
 
   const groups = aggregate(rows,level);
   inventoryBars.className = heatMapEnabled ? "heatmap-matrix" : "bars";
@@ -1524,6 +1567,29 @@ function renderDonut(rows){
     { label:"No inventory", value:t.noInventory, color:"#475569" }
   ];
   const total = Math.max(values.reduce((s,v) => s + v.value,0),1);
+
+  if(conditionChartMode === "histogram"){
+    conditionChartToggle.textContent = "Chart type: Histogram";
+    conditionChartBody.className = "histogram";
+    conditionChartBody.style.setProperty("--cols",values.length);
+    const max = Math.max(...values.map(v => v.value),1);
+    conditionChartBody.innerHTML = values.map((v,idx) => `
+      <div class="hist-col" style="animation-delay:${idx*40}ms">
+        <div class="hist-area">
+          <div class="hist-wrap" style="height:${Math.max(v.value/max*100,8)}%">
+            <div class="hist-value">${fmt(v.value)}</div>
+            <div class="hist-bar" style="height:calc(100% - 22px);background:${v.color}"></div>
+          </div>
+        </div>
+        <div class="hist-label">${v.label}</div>
+      </div>
+    `).join("");
+    return;
+  }
+
+  conditionChartToggle.textContent = "Chart type: Donut";
+  conditionChartBody.className = "donut-layout";
+  conditionChartBody.innerHTML = `<div id="conditionDonut" class="donut"></div><div id="conditionTable" class="table-wrap"></div>`;
   let start = 0;
   const stops = values.map(v => {
     const p = v.value / total * 100;
@@ -1531,9 +1597,11 @@ function renderDonut(rows){
     start += p;
     return stop;
   });
-  conditionDonut.style.background = `conic-gradient(${stops.join(",")})`;
-  conditionDonut.innerHTML = `<div class="donut-center">${fmt(total)}<br>${isSchoolUnitMode() ? "schools" : "units"}</div>`;
-  conditionTable.innerHTML = `<table><thead><tr><th>Segment</th><th>Value</th><th>Share</th></tr></thead><tbody>
+  const donut = document.getElementById("conditionDonut");
+  const table = document.getElementById("conditionTable");
+  donut.style.background = `conic-gradient(${stops.join(",")})`;
+  donut.innerHTML = `<div class="donut-center">${fmt(total)}<br>${isSchoolUnitMode() ? "schools" : "units"}</div>`;
+  table.innerHTML = `<table><thead><tr><th>Segment</th><th>Value</th><th>Share</th></tr></thead><tbody>
     ${values.map(v => `<tr><td><span class="dot" style="background:${v.color};margin-right:7px"></span>${v.label}</td><td><b>${fmt(v.value)}</b></td><td><b>${pct(v.value/total*100)}</b></td></tr>`).join("")}
   </tbody></table>`;
 }
@@ -1547,6 +1615,33 @@ function renderHistogram(rows){
     { label:isSchoolUnitMode() ? "Schools with broken units" : "Broken units", value:metricValue(t,"broken"), color:"#EF4444" },
     { label:"Needs attention", value:t.issue, color:"#075985" }
   ];
+
+  if(issueChartMode === "donut"){
+    issueChartToggle.textContent = "Chart type: Donut";
+    issueHistogram.className = "donut-layout";
+    const total = Math.max(items.reduce((s,i) => s + i.value,0),1);
+    let start = 0;
+    const stops = items.map(i => {
+      const p = i.value / total * 100;
+      const stop = `${i.color} ${start}% ${start+p}%`;
+      start += p;
+      return stop;
+    });
+    issueHistogram.innerHTML = `
+      <div class="donut" style="background:conic-gradient(${stops.join(",")})">
+        <div class="donut-center">${fmt(total)}<br>issues</div>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Issue</th><th>Value</th><th>Share</th></tr></thead><tbody>
+          ${items.map(i => `<tr><td><span class="dot" style="background:${i.color};margin-right:7px"></span>${i.label}</td><td><b>${fmt(i.value)}</b></td><td><b>${pct(i.value/total*100)}</b></td></tr>`).join("")}
+        </tbody></table>
+      </div>
+    `;
+    return;
+  }
+
+  issueChartToggle.textContent = "Chart type: Histogram";
+  issueHistogram.className = "histogram";
   const max = Math.max(...items.map(i => i.value),1);
   issueHistogram.style.setProperty("--cols",items.length);
   issueHistogram.innerHTML = items.map((i,idx) => `
@@ -1793,7 +1888,9 @@ regionSelect.addEventListener("change",() => { drill = { region:null, division:n
 divisionSelect.addEventListener("change",() => { drill = { region:null, division:null, geo:null, schoolDistrict:null }; schoolTableState.page = 1; renderAll(); });
 geoModeSelect.addEventListener("change",() => { geoMode = geoModeSelect.value; drill.geo = null; drill.schoolDistrict = null; schoolTableState.page = 1; renderAll(); });
 unitModeSelect.addEventListener("change",() => { unitMode = unitModeSelect.value; schoolTableState.page = 1; renderAll(); });
-heatMapToggle.addEventListener("click",() => { heatMapEnabled = !heatMapEnabled; renderAll(); });
+heatMapToggle.addEventListener("click",() => { heatMapEnabled = !heatMapEnabled; renderBars(filteredRows()); heatMapToggle.blur(); });
+conditionChartToggle.addEventListener("click",() => { conditionChartMode = conditionChartMode === "donut" ? "histogram" : "donut"; renderDonut(filteredRows()); });
+issueChartToggle.addEventListener("click",() => { issueChartMode = issueChartMode === "histogram" ? "donut" : "histogram"; renderHistogram(filteredRows()); });
 statusSelect.addEventListener("change",() => { schoolTableState.page = 1; renderAll(); });
 schoolSearch.addEventListener("input",() => { schoolTableState.page = 1; renderAll(); });
 document.querySelectorAll("[data-sort-key]").forEach(btn => btn.addEventListener("click",() => {
