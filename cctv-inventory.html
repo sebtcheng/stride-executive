@@ -272,7 +272,7 @@ body{
 
 .controls{
   display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
+  grid-template-columns:repeat(6,minmax(0,1fr));
   gap:8px;
   align-items:end;
 }
@@ -463,58 +463,57 @@ label span{
 .bars{display:grid;gap:9px}
 .heatmap-matrix{
   display:grid;
-  gap:10px;
-  min-width:780px;
+  gap:4px;
+  min-width:640px;
   overflow-x:auto;
 }
 .matrix-row{
   display:grid;
-  grid-template-columns:minmax(190px,1.35fr) repeat(5,minmax(96px,.8fr));
-  gap:8px;
-  animation:fadeSlide .35s ease both;
+  grid-template-columns:minmax(150px,1.2fr) repeat(5,minmax(76px,.75fr));
+  gap:4px;
+  animation:fadeSlide .24s ease both;
 }
 .matrix-row.drillable{cursor:pointer}
-.matrix-row.drillable:hover .matrix-cell{box-shadow:0 8px 18px rgba(8,49,95,.12);transform:translateY(-1px)}
+.matrix-row.drillable:hover .matrix-cell{box-shadow:0 5px 12px rgba(8,49,95,.10);transform:translateY(-1px)}
 .matrix-header .matrix-cell{
   min-height:auto;
+  padding:6px 8px;
   background:var(--navy);
   color:white;
-  font-size:10px;
-  letter-spacing:.12em;
+  font-size:9px;
+  letter-spacing:.1em;
   text-transform:uppercase;
 }
 .matrix-cell{
-  min-height:82px;
-  padding:11px 12px;
-  border:1.5px solid #DBEAFE;
-  border-radius:16px;
+  min-height:42px;
+  padding:6px 8px;
+  border:1px solid #DBEAFE;
+  border-radius:10px;
   background:#F8FAFC;
   color:var(--navy);
   transition:transform .16s ease,box-shadow .16s ease;
 }
-.matrix-cell strong{display:block;font-size:13px;font-weight:800;line-height:1.15}
-.matrix-cell b{display:block;font-size:22px;font-weight:800;letter-spacing:-.04em}
-.matrix-cell small{display:block;margin-top:4px;color:var(--muted);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
-.matrix-label small{font-size:10px;line-height:1.25;text-transform:none;letter-spacing:0}
-}
-.heat-cell{
-  min-height:118px;
-  padding:13px;
-  border:1.5px solid #DBEAFE;
-  border-radius:18px;
-  background:#EFF6FF;
-  color:var(--navy);
-  cursor:pointer;
-  animation:fadeSlide .35s ease both;
-}
-.heat-cell:hover{box-shadow:0 10px 22px rgba(8,49,95,.14);transform:translateY(-1px)}
-.heat-cell strong{display:block;font-size:14px;font-weight:800;line-height:1.15}
-.heat-cell small{display:block;margin-top:5px;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
-.heat-cell b{display:block;margin-top:10px;font-size:24px;font-weight:800;letter-spacing:-.04em}
-.heat-low{background:#DCFCE7;border-color:#86EFAC}
-.heat-mid{background:#FEF3C7;border-color:#FDE68A}
-.heat-high{background:#FEE2E2;border-color:#FCA5A5}
+.matrix-cell strong{display:block;font-size:11px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.matrix-cell b{display:block;font-size:16px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.matrix-cell small{display:block;margin-top:2px;color:rgba(8,49,95,.72);font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;line-height:1.05}
+.matrix-label small{font-size:8px;line-height:1.1;text-transform:none;letter-spacing:0}
 .heat-none{background:#F1F5F9;border-color:#CBD5E1}
+.heat-green-1{background:#DCFCE7;border-color:#86EFAC}
+.heat-green-2{background:#86EFAC;border-color:#22C55E}
+.heat-green-3{background:#16A34A;border-color:#15803D;color:white}
+.heat-red-1{background:#FEE2E2;border-color:#FCA5A5}
+.heat-red-2{background:#FCA5A5;border-color:#EF4444}
+.heat-red-3{background:#B91C1C;border-color:#991B1B;color:white}
+.heat-amber-1{background:#FEF3C7;border-color:#FDE68A}
+.heat-amber-2{background:#FBBF24;border-color:#D97706}
+.heat-amber-3{background:#D97706;border-color:#B45309;color:white}
+.heat-purple-1{background:#EDE9FE;border-color:#C4B5FD}
+.heat-purple-2{background:#A78BFA;border-color:#7C3AED}
+.heat-purple-3{background:#6D28D9;border-color:#5B21B6;color:white}
+.heat-slate-1{background:#F1F5F9;border-color:#CBD5E1}
+.heat-slate-2{background:#94A3B8;border-color:#64748B}
+.heat-slate-3{background:#475569;border-color:#334155;color:white}
+.matrix-cell[class*="-3"] small,.matrix-cell[class*="-3"] b{color:white}
 .bar-row{
   display:grid;
   grid-template-columns:165px minmax(0,1fr) 92px;
@@ -933,7 +932,7 @@ td{color:#1E293B;font-weight:600}
     <header class="topbar">
       <div class="page-title">
         <p class="eyebrow">Unit 9 Safety · CCTV Inventory Monitoring</p>
-        <h1>Regional CCTV <span>Inventory Dashboard</span></h1>
+        <h1>National School CCTV <span>Inventory Dashboard</span></h1>
         <p>Tracks working, broken, spare, and attention-needed CCTV records by region, division, and school using Unit 9 Safety CCTV fields.</p>
       </div>
       <section class="status-pill">
@@ -977,6 +976,13 @@ td{color:#1E293B;font-weight:600}
                 <option value="hasBroken">Has broken CCTV</option>
                 <option value="needsAttention">Needs attention</option>
                 <option value="noInventory">No CCTV inventory</option>
+              </select>
+            </label>
+            <label>
+              <span>Units</span>
+              <select id="unitModeSelect" class="select">
+                <option value="cctv">Total number of CCTVs</option>
+                <option value="schools">Number of schools</option>
               </select>
             </label>
             <button id="resetBtn" class="button" type="button">Reset</button>
@@ -1187,6 +1193,7 @@ let rawRows = [];
 let drill = { region:null, division:null, geo:null, schoolDistrict:null };
 let geoMode = "municipality";
 let heatMapEnabled = false;
+let unitMode = "cctv";
 let activeView = "overview";
 let schoolTableState = { page:1, pageSize:25, sortKey:"region", sortDirection:"asc", filters:{} };
 
@@ -1316,13 +1323,17 @@ function aggregate(rows, key){
   rows.forEach(r => {
     const name = r[key] || "Unassigned";
     if(!map.has(name)){
-      map.set(name,{ name, schools:0, working:0, broken:0, spare:0, issue:0, noInventory:0, recordingNo:0, dvrNo:0, wiresNo:0 });
+      map.set(name,{ name, schools:0, working:0, broken:0, spare:0, workingSchools:0, brokenSchools:0, spareSchools:0, cctvInventorySchools:0, issue:0, noInventory:0, recordingNo:0, dvrNo:0, wiresNo:0 });
     }
     const g = map.get(name);
     g.schools++;
     g.working += r.working;
     g.broken += r.broken;
     g.spare += r.spare;
+    if(r.working > 0) g.workingSchools++;
+    if(r.broken > 0) g.brokenSchools++;
+    if(r.spare > 0) g.spareSchools++;
+    if(r.working > 0 || r.broken > 0 || r.spare > 0) g.cctvInventorySchools++;
     if(r.issue) g.issue++;
     if(r.noInventory) g.noInventory++;
     if(r.recording === "no") g.recordingNo++;
@@ -1338,13 +1349,28 @@ function totals(rows){
     t.working += r.working;
     t.broken += r.broken;
     t.spare += r.spare;
+    if(r.working > 0) t.workingSchools++;
+    if(r.broken > 0) t.brokenSchools++;
+    if(r.spare > 0) t.spareSchools++;
+    if(r.working > 0 || r.broken > 0 || r.spare > 0) t.cctvInventorySchools++;
     if(r.issue) t.issue++;
     if(r.noInventory) t.noInventory++;
     if(r.recording === "no") t.recordingNo++;
     if(r.dvr === "no") t.dvrNo++;
     if(r.wires === "no") t.wiresNo++;
     return t;
-  },{schools:0,working:0,broken:0,spare:0,issue:0,noInventory:0,recordingNo:0,dvrNo:0,wiresNo:0});
+  },{schools:0,working:0,broken:0,spare:0,workingSchools:0,brokenSchools:0,spareSchools:0,cctvInventorySchools:0,issue:0,noInventory:0,recordingNo:0,dvrNo:0,wiresNo:0});
+}
+
+function isSchoolUnitMode(){ return unitMode === "schools"; }
+function unitLabel(){ return isSchoolUnitMode() ? "schools" : "CCTV units"; }
+function metricValue(summary,key){
+  if(!isSchoolUnitMode()) return summary[key] || 0;
+  if(key === "working") return summary.workingSchools || 0;
+  if(key === "broken") return summary.brokenSchools || 0;
+  if(key === "spare") return summary.spareSchools || 0;
+  if(key === "inventory") return summary.cctvInventorySchools || 0;
+  return summary[key] || 0;
 }
 
 function renderControls(){
@@ -1358,19 +1384,20 @@ function renderControls(){
   divisionSelect.innerHTML = divisions.map(d => `<option value="${d}">${d === "all" ? "All divisions" : d}</option>`).join("");
   divisionSelect.value = divisions.includes(oldDivision) ? oldDivision : "all";
   geoModeSelect.value = geoMode;
+  unitModeSelect.value = unitMode;
 }
 
 function renderKpis(rows){
   const t = totals(rows);
-  const totalCctvInventory = t.working + t.broken + t.spare;
+  const totalInventory = isSchoolUnitMode() ? metricValue(t,"inventory") : t.working + t.broken + t.spare;
   const cards = [
     ["Total Schools",fmt(t.schools),"schools in current scope","info"],
-    ["Total CCTV Inventory",fmt(totalCctvInventory),"working + broken + spares","info"],
-    ["Working",fmt(t.working),"operational CCTV units","ok"],
-    ["Broken",fmt(t.broken),"non-operational CCTV units","risk"],
-    ["Spares",fmt(t.spare),"available CCTV spares","warn"],
+    [isSchoolUnitMode() ? "Schools With CCTV" : "Total CCTV Inventory",fmt(totalInventory),isSchoolUnitMode() ? "rows with working, broken, or spare CCTV" : "working + broken + spares","info"],
+    ["Working",fmt(metricValue(t,"working")),isSchoolUnitMode() ? "schools with working CCTV" : "operational CCTV units","ok"],
+    ["Broken",fmt(metricValue(t,"broken")),isSchoolUnitMode() ? "schools with broken CCTV" : "non-operational CCTV units","risk"],
+    ["Spares",fmt(metricValue(t,"spare")),isSchoolUnitMode() ? "schools with CCTV spares" : "available CCTV spares","warn"],
     ["Attention",fmt(t.issue),"schools with CCTV issues","purple"],
-    ["No Inventory",fmt(t.noInventory),"zero CCTV counts","slate"]
+    ["No Inventory",fmt(t.noInventory),"schools with zero CCTV counts","slate"]
   ];
   kpiGrid.innerHTML = cards.map(c => `
     <article class="card kpi-card">
@@ -1403,6 +1430,13 @@ function setDrill(region,division,geo,schoolDistrict){
   renderAll();
 }
 
+function matrixHeatClass(value,max,color){
+  if(!value) return "heat-none";
+  const share = value / Math.max(max,1);
+  const level = share >= .66 ? 3 : share >= .33 ? 2 : 1;
+  return `heat-${color}-${level}`;
+}
+
 function renderBars(rows){
   let level = "region";
   let title = "CCTV Inventory by Region";
@@ -1430,32 +1464,42 @@ function renderBars(rows){
     </div>
   ` : "";
 
+  const maxWorking = Math.max(...groups.map(g => metricValue(g,"working")),1);
+  const maxBroken = Math.max(...groups.map(g => metricValue(g,"broken")),1);
+  const maxSpare = Math.max(...groups.map(g => metricValue(g,"spare")),1);
+  const maxIssue = Math.max(...groups.map(g => g.issue),1);
+  const maxNoInventory = Math.max(...groups.map(g => g.noInventory),1);
+
   groups.forEach((g,i) => {
-    const total = Math.max(g.working + g.broken + g.spare + g.noInventory,1);
+    const workingValue = metricValue(g,"working");
+    const brokenValue = metricValue(g,"broken");
+    const spareValue = metricValue(g,"spare");
+    const noInventoryValue = g.noInventory;
+    const total = Math.max(workingValue + brokenValue + spareValue + noInventoryValue,1);
     const issueRate = g.issue / Math.max(g.schools,1) * 100;
     const row = document.createElement("div");
-    row.style.animationDelay = `${i * 28}ms`;
+    row.style.animationDelay = `${i * 18}ms`;
 
     if(heatMapEnabled){
-      const heatClass = g.schools === 0 ? "heat-none" : issueRate >= 50 ? "heat-high" : issueRate >= 20 ? "heat-mid" : "heat-low";
+      const labelHeatClass = matrixHeatClass(g.issue,maxIssue,"purple");
       row.className = "matrix-row drillable";
       row.innerHTML = `
-        <div class="matrix-cell matrix-label ${heatClass}"><strong>${g.name}</strong><small>${fmt(g.schools)} schools · ${pct(issueRate)} need attention</small></div>
-        <div class="matrix-cell heat-low"><b>${fmt(g.working)}</b><small>Working</small></div>
-        <div class="matrix-cell ${g.broken ? "heat-high" : "heat-none"}"><b>${fmt(g.broken)}</b><small>Broken</small></div>
-        <div class="matrix-cell ${g.spare ? "heat-mid" : "heat-none"}"><b>${fmt(g.spare)}</b><small>Spares</small></div>
-        <div class="matrix-cell ${heatClass}"><b>${fmt(g.issue)}</b><small>Attention</small></div>
-        <div class="matrix-cell ${g.noInventory ? "heat-high" : "heat-none"}"><b>${fmt(g.noInventory)}</b><small>No inventory</small></div>
+        <div class="matrix-cell matrix-label ${labelHeatClass}"><strong>${g.name}</strong><small>${fmt(g.schools)} schools · ${pct(issueRate)} attention</small></div>
+        <div class="matrix-cell ${matrixHeatClass(workingValue,maxWorking,"green")}"><b>${fmt(workingValue)}</b><small>Working</small></div>
+        <div class="matrix-cell ${matrixHeatClass(brokenValue,maxBroken,"red")}"><b>${fmt(brokenValue)}</b><small>Broken</small></div>
+        <div class="matrix-cell ${matrixHeatClass(spareValue,maxSpare,"amber")}"><b>${fmt(spareValue)}</b><small>Spares</small></div>
+        <div class="matrix-cell ${matrixHeatClass(g.issue,maxIssue,"purple")}"><b>${fmt(g.issue)}</b><small>Attention</small></div>
+        <div class="matrix-cell ${matrixHeatClass(noInventoryValue,maxNoInventory,"slate")}"><b>${fmt(noInventoryValue)}</b><small>No inv.</small></div>
       `;
     }else{
       row.className = "bar-row drillable";
       row.innerHTML = `
         <span>${g.name}</span>
-        <div class="track" title="Working ${fmt(g.working)} · Broken ${fmt(g.broken)} · Spares ${fmt(g.spare)} · No inventory ${fmt(g.noInventory)}">
-          <div class="segment seg-working" style="width:${g.working/total*100}%">${g.working ? fmt(g.working) : ""}</div>
-          <div class="segment seg-broken" style="width:${g.broken/total*100}%">${g.broken ? fmt(g.broken) : ""}</div>
-          <div class="segment seg-spare" style="width:${g.spare/total*100}%">${g.spare ? fmt(g.spare) : ""}</div>
-          <div class="segment seg-none" style="width:${g.noInventory/total*100}%">${g.noInventory ? fmt(g.noInventory) : ""}</div>
+        <div class="track" title="Working ${fmt(workingValue)} · Broken ${fmt(brokenValue)} · Spares ${fmt(spareValue)} · No inventory ${fmt(noInventoryValue)}">
+          <div class="segment seg-working" style="width:${workingValue/total*100}%">${workingValue ? fmt(workingValue) : ""}</div>
+          <div class="segment seg-broken" style="width:${brokenValue/total*100}%">${brokenValue ? fmt(brokenValue) : ""}</div>
+          <div class="segment seg-spare" style="width:${spareValue/total*100}%">${spareValue ? fmt(spareValue) : ""}</div>
+          <div class="segment seg-none" style="width:${noInventoryValue/total*100}%">${noInventoryValue ? fmt(noInventoryValue) : ""}</div>
         </div>
         <b>${fmt(g.schools)} school${g.schools === 1 ? "" : "s"}</b>
       `;
@@ -1474,9 +1518,9 @@ function renderBars(rows){
 function renderDonut(rows){
   const t = totals(rows);
   const values = [
-    { label:"Working", value:t.working, color:"#16A34A" },
-    { label:"Broken", value:t.broken, color:"#B91C1C" },
-    { label:"Spares", value:t.spare, color:"#FBBF24" },
+    { label:"Working", value:metricValue(t,"working"), color:"#16A34A" },
+    { label:"Broken", value:metricValue(t,"broken"), color:"#B91C1C" },
+    { label:"Spares", value:metricValue(t,"spare"), color:"#FBBF24" },
     { label:"No inventory", value:t.noInventory, color:"#475569" }
   ];
   const total = Math.max(values.reduce((s,v) => s + v.value,0),1);
@@ -1488,7 +1532,7 @@ function renderDonut(rows){
     return stop;
   });
   conditionDonut.style.background = `conic-gradient(${stops.join(",")})`;
-  conditionDonut.innerHTML = `<div class="donut-center">${fmt(total)}<br>records</div>`;
+  conditionDonut.innerHTML = `<div class="donut-center">${fmt(total)}<br>${isSchoolUnitMode() ? "schools" : "units"}</div>`;
   conditionTable.innerHTML = `<table><thead><tr><th>Segment</th><th>Value</th><th>Share</th></tr></thead><tbody>
     ${values.map(v => `<tr><td><span class="dot" style="background:${v.color};margin-right:7px"></span>${v.label}</td><td><b>${fmt(v.value)}</b></td><td><b>${pct(v.value/total*100)}</b></td></tr>`).join("")}
   </tbody></table>`;
@@ -1500,7 +1544,7 @@ function renderHistogram(rows){
     { label:"Recording issue", value:t.recordingNo, color:"#B91C1C" },
     { label:"DVR room issue", value:t.dvrNo, color:"#D97706" },
     { label:"Wire issue", value:t.wiresNo, color:"#7C3AED" },
-    { label:"Broken units", value:t.broken, color:"#EF4444" },
+    { label:isSchoolUnitMode() ? "Schools with broken units" : "Broken units", value:metricValue(t,"broken"), color:"#EF4444" },
     { label:"Needs attention", value:t.issue, color:"#075985" }
   ];
   const max = Math.max(...items.map(i => i.value),1);
@@ -1748,6 +1792,7 @@ csvFile.addEventListener("change",e => {
 regionSelect.addEventListener("change",() => { drill = { region:null, division:null, geo:null, schoolDistrict:null }; schoolTableState.page = 1; renderAll(); });
 divisionSelect.addEventListener("change",() => { drill = { region:null, division:null, geo:null, schoolDistrict:null }; schoolTableState.page = 1; renderAll(); });
 geoModeSelect.addEventListener("change",() => { geoMode = geoModeSelect.value; drill.geo = null; drill.schoolDistrict = null; schoolTableState.page = 1; renderAll(); });
+unitModeSelect.addEventListener("change",() => { unitMode = unitModeSelect.value; schoolTableState.page = 1; renderAll(); });
 heatMapToggle.addEventListener("click",() => { heatMapEnabled = !heatMapEnabled; renderAll(); });
 statusSelect.addEventListener("change",() => { schoolTableState.page = 1; renderAll(); });
 schoolSearch.addEventListener("input",() => { schoolTableState.page = 1; renderAll(); });
@@ -1777,6 +1822,8 @@ resetBtn.addEventListener("click",() => {
   regionSelect.value = "all";
   divisionSelect.value = "all";
   statusSelect.value = "all";
+  unitMode = "cctv";
+  unitModeSelect.value = unitMode;
   schoolSearch.value = "";
   schoolTableState.page = 1;
   schoolTableState.sortKey = "region";
