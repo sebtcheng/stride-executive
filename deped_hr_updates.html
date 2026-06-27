@@ -371,9 +371,14 @@ function renderFilters(){
   heroTitle.innerHTML=c.heroTitle;
   schemaName.textContent=c.label; schemaFields.textContent=c.fields;
   [filter1Label,filter2Label,filter3Label,filter4Label].forEach((el,i)=>el.textContent=c.filterLabels[i]);
-  [filter1,filter2,filter3,filter4].forEach((select,i)=>{
+  const selects=[filter1,filter2,filter3,filter4];
+  const regionIdx=c.filterKeys.indexOf("region"),divisionIdx=c.filterKeys.indexOf("division");
+  const regionVal=regionIdx>=0?selects[regionIdx].value:"all";
+  selects.forEach((select,i)=>{
     const key=c.filterKeys[i], old=select.value;
-    const opts=["all",...Array.from(new Set(rows().map(r=>value(r,key)))).filter(Boolean).sort()];
+    let source=rows();
+    if(i===divisionIdx&&regionIdx>=0&&regionVal&&regionVal!=="all")source=source.filter(r=>value(r,"region")===regionVal);
+    const opts=["all",...Array.from(new Set(source.map(r=>value(r,key)))).filter(Boolean).sort()];
     select.innerHTML=opts.map(o=>`<option value="${safe(o)}">${o==="all"?"All":safe(o)}</option>`).join("");
     select.value=opts.includes(old)?old:"all";
   });
