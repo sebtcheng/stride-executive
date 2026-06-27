@@ -97,10 +97,7 @@ label{display:grid;gap:6px;min-width:0}label span{color:var(--muted);font-size:1
           </div>
 
           <div class="controls">
-            <label><span id="filter1Label">Region</span><select id="filter1" class="select"></select></label>
-            <label><span id="filter2Label">Division</span><select id="filter2" class="select"></select></label>
-            <label><span id="filter3Label">Position</span><select id="filter3" class="select"></select></label>
-            <label><span id="filter4Label">Status</span><select id="filter4" class="select"></select></label>
+            <span id="dynamicFilters" style="display:contents"></span>
             <label><span>Search</span><input id="globalSearch" class="search" type="search" placeholder="Search records..."></label>
             <button id="resetBtn" class="button" type="button">Reset</button>
           </div>
@@ -242,7 +239,7 @@ const DATASETS = {
   enrolment:{label:"Enrolment SY 2025–2026",heroTitle:"Enrolment <span>Monitoring Dashboard</span>",recordLabel:"Enrolment Records",recordSub:"enrolment records in view",numericLabels:{inventory:"Total Learners"},fields:"region · province · division · district · barangay · grade · gender · track · inventory",rows:[],required:["region","province","division","legislative_district","barangay","grade_level","gender","track","inventory"],valueKey:"inventory",filterKeys:["region","division","grade_level","track"],filterLabels:["Region","Division","Grade Level","Track"],hierarchy:["region","province","division","legislative_district","barangay"],distributionKeys:["grade_level","gender","track"],compositionKey:"grade_level",issueKey:"gender",columns:["region","province","division","legislative_district","barangay","grade_level","gender","track","inventory"],aliases:{legislative_district:["district"],grade_level:["grade","gradelevel"],inventory:["learners","learner_count","enrolment","enrollment","total"]}}
 };
 
-let state={dataset:inferDatasetPage(),drill:[],drillChartMode:"stacked",shareMode:"donut",issueMode:"histogram",page:1,pageSize:10,sortKey:null,sortDir:"asc",distKey:null,barDistKey:null,shareDistKey:null,issueDistKey:null,unitKey:null,advOpen:false,tableFilters:{},activeTableFilter:null,segFilters:{},heatSortKey:null,heatSortDir:"desc"};
+let state={dataset:inferDatasetPage(),drill:[],drillChartMode:"stacked",shareMode:"donut",issueMode:"histogram",page:1,pageSize:10,sortKey:null,sortDir:"asc",distKey:null,barDistKey:null,shareDistKey:null,issueDistKey:null,unitKey:null,advOpen:false,tableFilters:{},activeTableFilter:null,segFilters:{},filters:{},heatSortKey:null,heatSortDir:"desc"};
 let tableViewRows=[];
 const currentPage = state.dataset;
 
@@ -256,6 +253,8 @@ function pretty(k){return String(k).replaceAll("_"," ").replace(/\b\w/g,m=>m.toU
 function numericKeys(){const c=cfg();const first=c.rows[0]||{};return c.columns.filter(k=>typeof first[k]==="number")}
 function groupKeys(){const c=cfg();const nk=numericKeys();return c.columns.filter(k=>!nk.includes(k))}
 function distributionKeys(){const c=cfg();return (c.distributionKeys||groupKeys()).filter(k=>groupKeys().includes(k))}
+function isLocationKey(k){return ["region","province","division","legislative_district","district","municipality","city","barangay","site","school_district","purok","sitio"].includes(k)}
+function activeFilterKeys(){const cats=groupKeys();const base=["region","division"].filter(k=>cats.includes(k));let attrs=cats.filter(k=>!isLocationKey(k)&&!base.includes(k));if(attrs.includes("classification")&&attrs.includes("position"))attrs=["classification","position",...attrs.filter(k=>k!=="classification"&&k!=="position")];return [...base,...attrs]}
 function allowedCats(segKey,list){const all=summarize(list,segKey).map(x=>x.label);const sel=state.segFilters&&state.segFilters[segKey];if(sel&&sel.length)return all.filter(l=>sel.includes(l));if(all.length>5)return all.slice(0,5);return all}
 function safe(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
 function esc(s){return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'")}
@@ -344,9 +343,9 @@ function validateDataset(){
 }
 
 function currentRows(){
-  const c=cfg(), filters=[filter1.value,filter2.value,filter3.value,filter4.value], q=globalSearch.value.toLowerCase().trim();
+  const c=cfg(), q=globalSearch.value.toLowerCase().trim(), keys=activeFilterKeys();
   return rows().filter(r=>{
-    for(let i=0;i<c.filterKeys.length;i++) if(filters[i]!=="all"&&value(r,c.filterKeys[i])!==filters[i]) return false;
+    for(const k of keys){const fv=state.filters[k]||"all";if(fv!=="all"&&value(r,k)!==fv) return false;}
     for(let i=0;i<state.drill.length;i++) if(value(r,c.hierarchy[i])!==state.drill[i]) return false;
     if(q&&!Object.values(r).join(" ").toLowerCase().includes(q)) return false;
     return true;
@@ -370,17 +369,20 @@ function renderFilters(){
   const c=cfg();
   heroTitle.innerHTML=c.heroTitle;
   schemaName.textContent=c.label; schemaFields.textContent=c.fields;
-  [filter1Label,filter2Label,filter3Label,filter4Label].forEach((el,i)=>el.textContent=c.filterLabels[i]);
-  const selects=[filter1,filter2,filter3,filter4];
-  const regionIdx=c.filterKeys.indexOf("region"),divisionIdx=c.filterKeys.indexOf("division");
-  const regionVal=regionIdx>=0?selects[regionIdx].value:"all";
-  selects.forEach((select,i)=>{
-    const key=c.filterKeys[i], old=select.value;
+  const keys=activeFilterKeys();
+  const regionSel=state.filters.region&&state.filters.region!=="all"?state.filters.region:null;
+  dynamicFilters.innerHTML=keys.map(key=>{
     let source=rows();
-    if(i===divisionIdx&&regionIdx>=0&&regionVal&&regionVal!=="all")source=source.filter(r=>value(r,"region")===regionVal);
+    if(key==="division"&&regionSel)source=source.filter(r=>value(r,"region")===regionSel);
+    if(key==="position"&&state.filters.classification&&state.filters.classification!=="all")source=source.filter(r=>value(r,"classification")===state.filters.classification);
     const opts=["all",...Array.from(new Set(source.map(r=>value(r,key)))).filter(Boolean).sort()];
-    select.innerHTML=opts.map(o=>`<option value="${safe(o)}">${o==="all"?"All":safe(o)}</option>`).join("");
-    select.value=opts.includes(old)?old:"all";
+    const cur=state.filters[key]||"all";
+    const val=opts.includes(cur)?cur:"all";
+    state.filters[key]=val;
+    return `<label><span>${safe(pretty(key))}</span><select class="select" data-filter-key="${safe(key)}">${opts.map(o=>`<option value="${safe(o)}" ${o===val?"selected":""}>${o==="all"?"All":safe(o)}</option>`).join("")}</select></label>`;
+  }).join("");
+  dynamicFilters.querySelectorAll("select[data-filter-key]").forEach(sel=>{
+    sel.onchange=()=>{const k=sel.dataset.filterKey;state.filters[k]=sel.value;if(k==="region")state.filters.division="all";if(k==="classification")state.filters.position="all";autoDrillFromFilters();state.page=1;renderAll();};
   });
 }
 
@@ -627,8 +629,8 @@ function inferDatasetPage(){
 function inferCurrentPage(){return inferDatasetPage()}
 function setActiveSidebarPage(){document.querySelectorAll(".nav a").forEach(a=>a.classList.toggle("active",a.dataset.page===currentPage))}
 function autoDrillFromFilters(){
-  const c=cfg(); const els=[filter1,filter2,filter3,filter4]; const drillKeys=["region","division"]; const sel={};
-  c.filterKeys.forEach((fk,i)=>{ if(!drillKeys.includes(fk)) return; const hi=c.hierarchy.indexOf(fk); if(hi>=0&&els[i].value!=="all") sel[hi]=els[i].value; });
+  const c=cfg(); const drillKeys=["region","division"]; const sel={};
+  drillKeys.forEach(fk=>{ const hi=c.hierarchy.indexOf(fk); const fv=state.filters[fk]; if(hi>=0&&fv&&fv!=="all") sel[hi]=fv; });
   const lvls=Object.keys(sel).map(Number);
   if(!lvls.length){ state.drill=[]; return; }
   const deepest=Math.max(...lvls);
@@ -651,7 +653,6 @@ function renderAdvControls(){
 function renderAll(){validateDataset();renderFilters();renderAdvControls();const list=currentRows();renderKpis(list);renderTrail();renderBars(list);renderCharts(list);renderTable(list);setActiveSidebarPage()}
 
 document.querySelectorAll(".nav a").forEach(a=>a.classList.toggle("active",a.dataset.page===currentPage));
-[filter1,filter2,filter3,filter4].forEach(x=>x.addEventListener("input",()=>{autoDrillFromFilters();state.page=1;renderAll()}));
 globalSearch.addEventListener("input",()=>{state.page=1;renderAll()});
 advToggle.onclick=()=>{state.advOpen=!state.advOpen;renderAdvControls()};
 distSelect.onchange=()=>{state.distKey=distSelect.value||null;state.barDistKey=state.distKey;state.shareDistKey=state.distKey;state.issueDistKey=state.distKey;state.page=1;renderAll()};
@@ -662,7 +663,7 @@ catFilterBtn.onclick=openCatModal;
 catSearch.addEventListener("input",()=>{syncCatModalChecked();clearTimeout(catModalTimer);catModalTimer=setTimeout(()=>{catModalQuery=catSearch.value.trim();renderCatModalList()},180)});
 catModalBackdrop.onclick=e=>{if(e.target===catModalBackdrop) closeCatModal()};
 unitSelect.onchange=()=>{state.unitKey=unitSelect.value||null;state.page=1;renderAll()};
-resetBtn.onclick=()=>{state.drill=[];state.page=1;state.sortKey=null;state.tableFilters={};state.activeTableFilter=null;state.distKey=null;state.barDistKey=null;state.shareDistKey=null;state.issueDistKey=null;state.unitKey=null;state.advOpen=false;state.segFilters={};globalSearch.value="";filter1.value="all";filter2.value="all";filter3.value="all";filter4.value="all";renderAll()};
+resetBtn.onclick=()=>{state.drill=[];state.page=1;state.sortKey=null;state.tableFilters={};state.activeTableFilter=null;state.distKey=null;state.barDistKey=null;state.shareDistKey=null;state.issueDistKey=null;state.unitKey=null;state.advOpen=false;state.segFilters={};state.filters={};globalSearch.value="";renderAll()};
 heatToggle.onclick=()=>{state.drillChartMode=state.drillChartMode==="stacked"?"heatmap":"stacked";renderBars(currentRows())};
 shareToggle.onclick=()=>{state.shareMode=state.shareMode==="donut"?"histogram":"donut";renderShareChart(currentRows())};
 issueToggle.onclick=()=>{state.issueMode=state.issueMode==="histogram"?"donut":"histogram";renderIssueChart(currentRows())};
