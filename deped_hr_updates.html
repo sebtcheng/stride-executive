@@ -122,7 +122,7 @@ label{display:grid;gap:6px;min-width:0}label span{color:var(--muted);font-size:1
                 <h2 id="barTitle">Drilldown</h2>
                 <p class="card-subtitle">Click a bar or heat-map row to drill down through the dataset hierarchy.</p>
               </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap">
                 <span class="tag info" id="scopeTag">Level 1</span>
                 <span class="card-dist"><span class="card-dist-label">Split by</span><select id="barDistSelect" class="select card-dist-select"></select></span>
                 <button id="heatToggle" class="button secondary chart-toggle" type="button">Stacked bars</button>
@@ -141,7 +141,7 @@ label{display:grid;gap:6px;min-width:0}label span{color:var(--muted);font-size:1
                 <h2 id="shareTitle">Composition Share</h2>
                 <p class="card-subtitle">Composition of the main category for the current tab.</p>
               </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="card-dist"><span class="card-dist-label">Split by</span><select id="shareDistSelect" class="select card-dist-select"></select></span><button id="shareToggle" class="button secondary chart-toggle" type="button">Donut Chart</button></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap"><span class="card-dist"><span class="card-dist-label">Split by</span><select id="shareDistSelect" class="select card-dist-select"></select></span><button id="shareToggle" class="button secondary chart-toggle" type="button">Donut Chart</button></div>
             </div>
             <div id="shareChart" class="donut-layout"></div>
           </div>
@@ -154,7 +154,7 @@ label{display:grid;gap:6px;min-width:0}label span{color:var(--muted);font-size:1
                 <h2 id="issueTitle">Signal Summary</h2>
                 <p class="card-subtitle">Status, classification, gender, or track signals depending on the active dataset.</p>
               </div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="card-dist"><span class="card-dist-label">Split by</span><select id="issueDistSelect" class="select card-dist-select"></select></span><button id="issueToggle" class="button secondary chart-toggle" type="button">Histogram</button></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap"><span class="card-dist"><span class="card-dist-label">Split by</span><select id="issueDistSelect" class="select card-dist-select"></select></span><button id="issueToggle" class="button secondary chart-toggle" type="button">Histogram</button></div>
             </div>
             <div id="issueChart" class="histogram"></div>
           </div>
