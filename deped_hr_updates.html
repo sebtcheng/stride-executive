@@ -282,13 +282,43 @@ function parseCsv(text){
   const parsedRows=rows.map(values=>{const obj={};headers.forEach((h,i)=>obj[h]=String(values[i]??"").trim());return obj});
   return{headers,rows:parsedRows};
 }
+function repairMojibake(text){
+  return String(text||"")
+    .replace(/Ã‘/g,"Ñ").replace(/Ã±/g,"ñ")
+    .replace(/ã‘/g,"Ñ").replace(/ã±/g,"ñ")
+    .replace(/Ã/g,"Á").replace(/Ã¡/g,"á")
+    .replace(/Ã‰/g,"É").replace(/Ã©/g,"é")
+    .replace(/Ã/g,"Í").replace(/Ã­/g,"í")
+    .replace(/Ã“/g,"Ó").replace(/Ã³/g,"ó")
+    .replace(/Ãš/g,"Ú").replace(/Ãº/g,"ú")
+    .replace(/Ãœ/g,"Ü").replace(/Ã¼/g,"ü")
+    .replace(/â€“/g,"–").replace(/â€”/g,"—")
+    .replace(/â€˜/g,"‘").replace(/â€™/g,"’")
+    .replace(/â€œ/g,"“").replace(/â€/g,"”")
+    .replace(/Â /g," ").replace(/Â/g,"");
+}
+function decodeCsvText(buffer){
+  const bytes=new Uint8Array(buffer);
+  const utf8=new TextDecoder("utf-8",{fatal:false}).decode(bytes);
+  const win1252=new TextDecoder("windows-1252").decode(bytes);
+  const badness=t=>(t.match(/\uFFFD/g)||[]).length*20+(t.match(/Ã.|Â.|â[€\u0080-\u009F]/g)||[]).length*8;
+  const decoded=badness(utf8)>badness(win1252)?win1252:utf8;
+  return repairMojibake(decoded).replace(/^\uFEFF/,"");
+}
+function canonicalCell(text){
+  let v=repairMojibake(text).replace(/\s+/g," ").trim();
+  v=v
+    .replace(/\bLas\s+Pi(?:ñ|Ã±|ã±|ï¿½|�|n)as\b/gi,"Las Piñas")
+    .replace(/\bPara(?:ñ|Ã±|ã±|ï¿½|�|n)aque\b/gi,"Parañaque");
+  return v;
+}
 function validateCsvHeaders(datasetKey,headers){
   const c=DATASETS[datasetKey];
   const hasField=k=>headers.includes(k)||(c.aliases?.[k]||[]).some(a=>headers.includes(normalizeHeader(a)));
   const missing=c.required.filter(k=>!hasField(k));
   if(missing.length)throw new Error(`${c.label} CSV is missing required field(s): ${missing.join(", ")}`);
 }
-function cleanCell(v){return String(v??"").trim()}
+function cleanCell(v){return canonicalCell(v)}
 function parseNumber(v){const cleaned=String(v??"").replace(/,/g,"").trim();return Number(cleaned)||0}
 function sourceValue(row,key,aliases=[]){for(const k of [key,...aliases]){if(row[k]!==undefined&&String(row[k]).trim()!=="")return row[k]}return""}
 function coerceRows(datasetKey,raw){
@@ -308,7 +338,7 @@ async function fetchFirstAvailableCsv(datasetKey){
     try{
       const response=await fetch(url,{cache:"no-store"});
       if(!response.ok)throw new Error(`HTTP ${response.status}`);
-      return{url,text:await response.text()};
+      return{url,text:decodeCsvText(await response.arrayBuffer())};
     }catch(error){errors.push(`${url}: ${error.message||error}`)}
   }
   throw new Error(errors.join(" | "));
@@ -465,14 +495,14 @@ function renderBars(list){
   }
   bars.className="bars";bars.innerHTML="";
   groups.forEach(g=>{
-    const click=` onclick="setDrill(${level+1},'${esc(g.name)}')"`;
+    const drillLevel=level+1,drillName=esc(g.name);
     const cur="pointer";
     const st=shownTotal(g)||1;
     const trackWidth=Math.max(st/max*100,4);
-    const segs=compCats.map(cat=>{const v=g.composition[cat]||0;if(!v)return"";const pw=v/st*100;const lbl=pw>=8?fmt(v):"";const bg=colorMap[cat];return `<div class="segment" style="width:${pw}%;background:${bg};color:${contrastText(bg)}" title="${safe(cat)}: ${fmt(v)}">${lbl}</div>`}).join("");
+    const segs=compCats.map(cat=>{const v=g.composition[cat]||0;if(!v)return"";const pw=v/st*100;const segmentWidth=trackWidth*pw/100;const lbl=segmentWidth>=7?fmt(v):"";const bg=colorMap[cat];return `<div class="segment" style="width:${pw}%;background:${bg};color:${contrastText(bg)}" title="${safe(cat)}: ${fmt(v)}">${lbl}</div>`}).join("");
     const ttRows=compCats.map(cat=>`<div class="bar-tt-row"><span class="dot" style="background:${colorMap[cat]}"></span><span class="tt-label">${safe(cat)}</span><span class="tt-val">${fmt(g.composition[cat]||0)}</span></div>`).join("");
     const tooltip=`<p class="bar-tt-title">${safe(g.name)}</p>${ttRows}<div class="bar-tt-total"><span>Total</span><span>${fmt(shownTotal(g))}</span></div>`;
-    bars.insertAdjacentHTML("beforeend",`<div class="bar-row" style="cursor:${cur}" onmousemove="showBarTooltip(event,this.dataset.tooltip)" onmouseleave="hideBarTooltip()" data-tooltip="${safe(tooltip)}"${click}><span>${safe(g.name)}</span><div class="track" style="width:${trackWidth}%">${segs}</div><b>${fmt(st)}</b></div>`);
+    bars.insertAdjacentHTML("beforeend",`<div class="bar-row" style="cursor:${cur};touch-action:manipulation;-webkit-user-select:none;user-select:none" onpointerdown="startBarPress(event,this)" onpointermove="moveBarPress(event,this.dataset.tooltip)" onpointerup="endBarPress(event,${drillLevel},'${drillName}')" onpointercancel="cancelBarPress()" onpointerleave="handleBarPointerLeave(event)" data-tooltip="${safe(tooltip)}"><span>${safe(g.name)}</span><div class="track" style="width:${trackWidth}%">${segs}</div><b>${fmt(st)}</b></div>`);
   });
 }
 
@@ -605,6 +635,55 @@ function applyCatModal(){
   const checked=[...catModalChecked];
   if(checked.length) state.segFilters[catModalKey]=checked; else delete state.segFilters[catModalKey];
   closeCatModal(); state.page=1; renderAll();
+}
+const LONG_PRESS_MS=520;
+const LONG_PRESS_MOVE_LIMIT=12;
+let longPressTimer=null,longPressActive=false,longPressStartX=0,longPressStartY=0;
+function isHoverDevice(){return window.matchMedia("(hover: hover) and (pointer: fine)").matches}
+function isTouchLikePointer(e){return e&&((e.pointerType==="touch")||(e.pointerType==="pen"))}
+function clearLongPressTimer(){if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null}}
+function startBarPress(e,el){
+  if(!isTouchLikePointer(e))return;
+  clearLongPressTimer();
+  longPressActive=false;
+  longPressStartX=e.clientX;
+  longPressStartY=e.clientY;
+  longPressTimer=setTimeout(()=>{
+    longPressActive=true;
+    showBarTooltip({clientX:longPressStartX,clientY:longPressStartY},el.dataset.tooltip);
+  },LONG_PRESS_MS);
+}
+function moveBarPress(e,html){
+  if(isTouchLikePointer(e)){
+    const dx=Math.abs(e.clientX-longPressStartX),dy=Math.abs(e.clientY-longPressStartY);
+    if(!longPressActive&&(dx>LONG_PRESS_MOVE_LIMIT||dy>LONG_PRESS_MOVE_LIMIT)){cancelBarPress();return}
+    if(longPressActive)showBarTooltip(e,html);
+    return;
+  }
+  if(isHoverDevice())showBarTooltip(e,html);
+}
+function endBarPress(e,level,name){
+  if(isTouchLikePointer(e)){
+    clearLongPressTimer();
+    if(longPressActive){
+      hideBarTooltip();
+      longPressActive=false;
+      if(e.preventDefault)e.preventDefault();
+      return;
+    }
+    setDrill(level,name);
+    return;
+  }
+  setDrill(level,name);
+}
+function cancelBarPress(){
+  clearLongPressTimer();
+  longPressActive=false;
+  hideBarTooltip();
+}
+function handleBarPointerLeave(e){
+  if(isTouchLikePointer(e)){cancelBarPress();return}
+  if(isHoverDevice())hideBarTooltip();
 }
 function showBarTooltip(e,html){
   barHoverTooltip.innerHTML=html;
