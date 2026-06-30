@@ -1,0 +1,4352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InsightED Resource Mapping Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Quicksand:wght@700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" crossorigin=""></script>
+
+  <style>
+    :root {
+      --navy: #08315F;
+      --blue: #075985;
+      --blue-600: #0284C7;
+      --blue-400: #7DD3FC;
+      --blue-100: #E0F2FE;
+      --blue-50: #F0F9FF;
+      --gold: #FBBF24;
+      --red: #B91C1C;
+      --green: #16A34A;
+      --purple: #7C3AED;
+      --card: #FFFFFF;
+      --text: #0F172A;
+      --muted: #64748B;
+      --line: #BAE6FD;
+      --font-heading: Quicksand, ui-sans-serif, system-ui, sans-serif;
+      --font-body: "Comic Neue", ui-sans-serif, system-ui, sans-serif;
+      --radius: 22px;
+      --sidebar-width: 248px;
+      --sidebar-collapsed-width: 78px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-weight: 700;
+      background-color: var(--blue-50);
+      background-attachment: fixed;
+      background-image:
+        radial-gradient(43.5% 49.5% at 10% 12%, rgba(7, 89, 133, .24) 0 34%, transparent 78%),
+        radial-gradient(46.5% 54% at 92% 10%, rgba(251, 191, 36, .30) 0 36%, transparent 80%),
+        radial-gradient(40.5% 48% at 84% 92%, rgba(125, 211, 252, .22) 0 34%, transparent 78%),
+        radial-gradient(45% 52.5% at 8% 92%, rgba(217, 119, 6, .16) 0 28%, rgba(251, 191, 36, .10) 42%, transparent 80%);
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: var(--sidebar-collapsed-width) 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      width: var(--sidebar-collapsed-width);
+      height: 100vh;
+      padding: 22px 6px;
+      overflow: visible;
+      color: white;
+      background:
+        radial-gradient(ellipse at 22% 0%, color-mix(in srgb, var(--gold) 18%, transparent), transparent 42%),
+        linear-gradient(180deg, color-mix(in srgb, var(--navy) 94%, transparent), color-mix(in srgb, var(--blue) 72%, var(--navy) 28%));
+      border-right: 1px solid rgba(255,255,255,.24);
+      box-shadow: 8px 0 22px rgba(11,31,77,.12);
+      z-index: 20;
+      transition: width .28s ease, padding .28s ease, box-shadow .28s ease;
+    }
+
+    .sidebar:hover,
+    .sidebar:focus-within {
+      width: var(--sidebar-width);
+      padding: 22px 16px;
+      box-shadow: 18px 0 42px rgba(11,31,77,.18);
+    }
+
+    .brand {
+      display: grid;
+      place-items: center;
+      width: 66px;
+      height: 96px;
+      margin: 0 auto 22px;
+      padding: 2px;
+      overflow: visible;
+      border-radius: 16px;
+      background: transparent;
+      border: 0;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: width .28s ease, height .28s ease, padding .28s ease;
+    }
+
+    .brand-logo {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .brand-logo.horizontal {
+      display: none;
+    }
+
+    .sidebar:hover .brand,
+    .sidebar:focus-within .brand {
+      width: 100%;
+      height: 135px;
+      padding: 0;
+      justify-content: center;
+      overflow: visible;
+    }
+
+    .sidebar:hover .brand-logo.vertical,
+    .sidebar:focus-within .brand-logo.vertical {
+      display: none;
+    }
+
+    .sidebar:hover .brand-logo.horizontal,
+    .sidebar:focus-within .brand-logo.horizontal {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 135px;
+      object-fit: contain;
+      margin: 0 auto;
+    }
+
+    .sidebar-title {
+      display: grid;
+      grid-template-columns: 46px 0fr;
+      align-items: center;
+      gap: 0;
+      width: 46px;
+      height: 0;
+      min-height: 0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      border-radius: 18px;
+      background: transparent;
+      border: 1px solid transparent;
+      opacity: 0;
+      pointer-events: none;
+      transition: width .28s ease, height .28s ease, min-height .28s ease, grid-template-columns .28s ease, gap .28s ease, padding .28s ease, margin .28s ease, background .28s ease, opacity .18s ease;
+    }
+
+    .sidebar-title-mark {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      color: var(--navy);
+      background: var(--gold);
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -0.05em;
+      flex: 0 0 auto;
+    }
+
+    .sidebar-title-copy {
+      min-width: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .18s ease, visibility .18s ease;
+    }
+
+    .sidebar-title h2 {
+      margin: 0;
+      color: #E0F2FE;
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.05;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+    }
+
+    .sidebar-title p {
+      margin: 4px 0 0;
+      color: #BAE6FD;
+      font-size: 8px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+
+    .sidebar:hover .sidebar-title,
+    .sidebar:focus-within .sidebar-title {
+      grid-template-columns: 46px 1fr;
+      gap: 10px;
+      width: calc(var(--sidebar-width) - 32px);
+      height: auto;
+      min-height: 52px;
+      padding: 12px;
+      margin: 0 0 18px;
+      background: rgba(255,255,255,.12);
+      border-color: rgba(255,255,255,.18);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sidebar:hover .sidebar-title-copy,
+    .sidebar:focus-within .sidebar-title-copy {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .sidebar-label {
+      height: 0;
+      margin: 0;
+      overflow: hidden;
+      color: #BAE6FD;
+      font-family: var(--font-heading);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity .2s ease, height .2s ease, margin .2s ease;
+    }
+
+    .sidebar:hover .sidebar-label,
+    .sidebar:focus-within .sidebar-label {
+      height: auto;
+      margin: 18px 8px 8px;
+      opacity: 1;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      width: 46px;
+      min-height: 42px;
+      padding: 10px 0;
+      color: #E0F2FE;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 15px;
+      background: rgba(255,255,255,.08);
+      font-family: var(--font-heading);
+      font-size: 0;
+      font-weight: 900;
+      text-align: left;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: width .28s ease, gap .28s ease, padding .28s ease, font-size .18s ease, justify-content .18s ease;
+    }
+
+    .nav button[hidden] {
+      display: none !important;
+    }
+
+    .sidebar:hover .nav button,
+    .sidebar:focus-within .nav button {
+      justify-content: flex-start;
+      gap: 10px;
+      width: calc(var(--sidebar-width) - 32px);
+      padding: 10px 12px;
+      font-size: 11px;
+    }
+
+    .nav button::before {
+      content: attr(data-icon);
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      color: var(--navy);
+      background: rgba(255,255,255,.92);
+      font-size: 14px;
+      flex: 0 0 auto;
+    }
+
+    .nav-copy {
+      display: grid;
+      gap: 2px;
+      width: 0;
+      min-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity .18s ease, width .28s ease;
+    }
+
+    .nav-title {
+      display: block;
+      color: #E0F2FE;
+      font-family: var(--font-heading);
+      font-size: 0;
+      font-weight: 900;
+      line-height: 1.05;
+    }
+
+    .nav-desc {
+      display: block;
+      color: #BAE6FD;
+      font-family: var(--font-body);
+      font-size: 0;
+      font-weight: 700;
+      line-height: 1.15;
+      white-space: normal;
+    }
+
+    .sidebar:hover .nav-copy,
+    .sidebar:focus-within .nav-copy {
+      width: auto;
+      opacity: 1;
+    }
+
+    .sidebar:hover .nav-title,
+    .sidebar:focus-within .nav-title {
+      font-size: 11px;
+    }
+
+    .sidebar:hover .nav-desc,
+    .sidebar:focus-within .nav-desc {
+      font-size: 8.5px;
+    }
+
+    .nav button.active {
+      color: #fff;
+      border-color: rgba(255,255,255,.28);
+      background: rgba(255,255,255,.16);
+      box-shadow:
+        inset 0 -3px 0 var(--gold),
+        0 0 18px color-mix(in srgb, var(--blue-400) 26%, transparent);
+    }
+
+    .sidebar-action {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 18px;
+    }
+
+    .center-map {
+      width: 100%;
+      min-height: 38px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--gold);
+      color: #111827;
+      font-family: var(--font-heading);
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 14px 22px 28px;
+    }
+
+    .dashboard-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: stretch;
+      min-height: calc(100vh - 168px);
+    }
+
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      gap: 16px;
+    }
+
+    .map-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: calc(100vh - 168px);
+    }
+
+    .command-bar {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(58px, .55fr);
+      gap: 8px;
+      align-items: end;
+      padding: 14px 14px 12px;
+      border: 2.5px solid color-mix(in srgb, var(--blue) 64%, var(--navy) 36%);
+      border-radius: 24px;
+      background: rgba(255,255,255,.88);
+      box-shadow: none;
+    }
+
+    .filter-header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 2px;
+    }
+
+    .filter-heading h2 {
+      margin: 0;
+      color: var(--navy);
+      font-family: var(--font-heading);
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .filter-heading p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .search-pill,
+    .select-pill,
+    .toggle-pill,
+    .reset-pill,
+    .icon-pill {
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #F8FCFF;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 8.5px;
+      font-weight: 700;
+    }
+
+    .search-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+    }
+
+    .search-pill span {
+      color: var(--blue);
+      font-size: 13px;
+    }
+
+    .search-pill input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--muted);
+      font: 700 10px var(--font-body);
+    }
+
+    .select-pill {
+      min-width: 0;
+      padding: 0 24px 0 10px;
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, var(--blue-600) 50%), linear-gradient(135deg, var(--blue-600) 50%, transparent 50%);
+      background-position: calc(100% - 14px) 14px, calc(100% - 9px) 14px;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    .toggle-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 13px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .switch {
+      width: 30px;
+      height: 16px;
+      padding: 2px;
+      border-radius: 999px;
+      background: #CBD5E1;
+    }
+
+    .switch::after {
+      content: "";
+      display: block;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: white;
+    }
+
+    .reset-pill {
+      min-width: 70px;
+      color: #EF4444;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .icon-pill {
+      display: grid;
+      place-items: center;
+      width: 35px;
+      color: var(--blue);
+      cursor: pointer;
+    }
+
+    .icon-pill.active {
+      color: white;
+      background: var(--navy);
+      border-color: var(--navy);
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0;
+    }
+
+    .kpis.kpi-count-1 {
+      grid-template-columns: 1fr;
+    }
+
+    .kpis.kpi-count-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kpis.kpi-count-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .kpis.kpi-count-5 {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .kpis.kpi-count-5 .kpi {
+      grid-column: span 2;
+    }
+
+    .kpis.kpi-count-5 .kpi:nth-child(n+4) {
+      grid-column: span 3;
+    }
+
+    .kpis.kpi-count-6 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .kpis.kpi-count-7 {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .kpis.kpi-count-7 .kpi {
+      grid-column: span 3;
+    }
+
+    .kpis.kpi-count-7 .kpi:nth-child(n+5) {
+      grid-column: span 4;
+    }
+
+    .kpis.kpi-count-8 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .kpi {
+      position: relative;
+      isolation: isolate;
+      min-height: 78px;
+      padding: 12px 12px 10px;
+      overflow: hidden;
+      border: 3px solid color-mix(in srgb, var(--blue) 72%, var(--navy) 28%);
+      border-radius: 18px;
+      background: rgba(255,255,255,.94);
+      box-shadow: none;
+    }
+
+    .kpi::after {
+      content: "";
+      position: absolute;
+      right: -18px;
+      bottom: -26px;
+      width: 88px;
+      height: 88px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--blue-100) 80%, transparent);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .kpi-copy {
+      position: relative;
+      z-index: 1;
+    }
+
+    .kpi-value {
+      margin-top: 2px;
+      color: var(--navy);
+      font-family: var(--font-heading);
+      font-size: clamp(22px, 1.65vw, 32px);
+      line-height: .95;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .kpi-label {
+      color: var(--navy);
+      font-family: var(--font-heading);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: .18em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .kpi-subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .filter-panel {
+      margin-bottom: 18px;
+      padding: 18px 14px;
+      border: 2.5px solid color-mix(in srgb, var(--blue) 64%, var(--navy) 36%);
+      border-radius: 24px;
+      background: rgba(255,255,255,.78);
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: .8fr .9fr 1.6fr 1.35fr 1.05fr .9fr;
+      gap: 18px;
+    }
+
+    .field label {
+      display: block;
+      margin: 0 0 8px;
+      color: #94A3B8;
+      font-family: var(--font-heading);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .field select {
+      width: 100%;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      color: var(--navy);
+      font: 700 10px var(--font-body);
+    }
+
+    .topbar {
+      position: relative;
+      isolation: isolate;
+      min-height: 118px;
+      margin: 16px 0 18px;
+      padding: 28px 44px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 18px;
+      overflow: hidden;
+      border: 2.5px solid color-mix(in srgb, var(--blue) 64%, var(--navy) 36%);
+      border-radius: calc(var(--radius) + 6px);
+      box-shadow: none;
+      background:
+        radial-gradient(circle at 92% 50%, rgba(251,191,36,.18) 0 7%, rgba(251,191,36,.08) 7.2% 13%, transparent 13.2%),
+        radial-gradient(circle at 98% 46%, rgba(251,191,36,.28) 0 10%, transparent 10.5%),
+        linear-gradient(112deg, var(--navy) 0 70%, rgba(255,255,255,.96) 70.2% 100%);
+    }
+
+    .topbar::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 70%;
+      background: linear-gradient(135deg, var(--navy), var(--blue));
+      clip-path: polygon(0 0, 88% 0, 100% 100%, 0 100%);
+      z-index: -2;
+      pointer-events: none;
+    }
+
+    .topbar::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 61%;
+      width: 13%;
+      background: color-mix(in srgb, var(--navy) 88%, #000 12%);
+      clip-path: polygon(0 0, 58% 0, 100% 100%, 42% 100%);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .page-title {
+      max-width: min(92%, 960px);
+      min-width: 0;
+    }
+
+    .page-eyebrow {
+      margin: 0 0 7px;
+      color: var(--gold);
+      font-family: var(--font-heading);
+      font-size: clamp(8px, .7vw, 11px);
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .page-title h1 {
+      margin: 0;
+      color: #E0F2FE;
+      font-family: var(--font-heading);
+      font-size: clamp(24px, 2.2vw, 34px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      text-shadow: 0 2px 0 rgba(15,23,42,.28);
+    }
+
+    .page-title p {
+      max-width: 720px;
+      margin: 6px 0 0;
+      color: #DFF6FF;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .topbar-actions {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-pill {
+      min-width: 88px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--navy);
+      text-align: center;
+      font-family: var(--font-heading);
+      font-weight: 900;
+    }
+
+    .header-pill strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .header-pill span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 7px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .summary {
+      margin-bottom: 16px;
+    }
+
+    .summary-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .metric {
+      overflow: hidden;
+      border: 1px solid #CBD5E1;
+      border-radius: 5px;
+      text-align: center;
+      background: #fff;
+    }
+
+    .metric-label {
+      padding: 6px 8px;
+      color: #fff;
+      background: var(--blue);
+      font-family: var(--font-heading);
+      font-size: 7px;
+      font-weight: 900;
+    }
+
+    .metric-value {
+      padding: 11px 8px 12px;
+      color: #111827;
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .card {
+      overflow: hidden;
+      background: var(--card);
+      border: 2.5px solid color-mix(in srgb, var(--blue) 64%, var(--navy) 36%);
+      border-radius: 12px;
+      box-shadow: none;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 30px;
+      padding: 0 12px;
+      color: #fff;
+      background: var(--blue);
+      font-family: var(--font-heading);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .table-card {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main.no-kpis .dashboard-body {
+      align-items: stretch;
+    }
+
+    .table-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      height: min(38vh, 360px);
+      min-height: 250px;
+      overflow: auto;
+      background: #fff;
+    }
+
+    .table-wrap::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+    }
+
+    .table-wrap::-webkit-scrollbar-thumb {
+      border: 3px solid #fff;
+      border-radius: 999px;
+      background: #94A3B8;
+    }
+
+    .table-wrap::-webkit-scrollbar-track {
+      background: #F8FAFC;
+    }
+
+    table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+      font-size: 11.25px;
+    }
+
+    th,
+    td {
+      display: table-cell;
+      width: 124px;
+      min-width: 124px;
+      max-width: 124px;
+      padding: 7px 8px;
+      border-bottom: 1px solid #E2E8F0;
+      text-align: left;
+      vertical-align: middle;
+      overflow-wrap: normal;
+      word-break: normal;
+      white-space: normal;
+      background: #fff;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      color: #111827;
+      font-family: var(--font-heading);
+      font-size: 10px;
+      font-weight: 900;
+      background: #fff;
+      vertical-align: top;
+    }
+
+    td {
+      color: #1F2937;
+      font-weight: 700;
+    }
+
+    th:nth-child(1),
+    td:nth-child(1) {
+      width: 118px;
+      min-width: 118px;
+      max-width: 118px;
+    }
+
+    th:nth-child(2),
+    td:nth-child(2) {
+      width: 118px;
+      min-width: 118px;
+      max-width: 118px;
+    }
+
+    th:nth-child(3),
+    td:nth-child(3) {
+      position: sticky;
+      left: 0;
+      width: 100px;
+      min-width: 100px;
+      max-width: 100px;
+      z-index: 3;
+      background: #fff;
+    }
+
+    th:nth-child(4),
+    td:nth-child(4) {
+      position: sticky;
+      left: 100px;
+      width: 168px;
+      min-width: 168px;
+      max-width: 168px;
+      z-index: 3;
+      background: #fff;
+      box-shadow: 8px 0 12px rgba(15,23,42,.06);
+    }
+
+    th:nth-child(3),
+    th:nth-child(4) {
+      z-index: 6;
+    }
+
+    tbody tr:hover td,
+    tbody tr.active-row td {
+      background: var(--blue-50);
+      color: var(--navy);
+    }
+
+    .pager {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 18px;
+      height: 48px;
+      padding: 0 12px;
+      color: #6B7280;
+      font-size: 9px;
+      background: #fff;
+    }
+
+    .pager button {
+      border: 0;
+      color: #9CA3AF;
+      background: transparent;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .column-sort-button {
+      display: -webkit-box;
+      width: 100%;
+      min-height: 21px;
+      max-height: 21px;
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      background: transparent;
+      color: #111827;
+      font: 900 10px/1.05 var(--font-heading);
+      text-align: left;
+      cursor: pointer;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .column-sort-button:hover {
+      color: var(--blue);
+    }
+
+    .column-filter-input {
+      width: 100%;
+      min-height: 25px;
+      margin-top: 6px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      outline: 0;
+      background: #F8FCFF;
+      color: var(--text);
+      font: 700 8.5px var(--font-body);
+    }
+
+    .column-filter-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue-100) 70%, transparent);
+    }
+
+    #resourceMap {
+      flex: 1 1 auto;
+      height: 100%;
+      min-height: 640px;
+      width: 100%;
+      background: var(--blue-100);
+      z-index: 1;
+    }
+
+    .leaflet-container {
+      font-family: var(--font-body);
+    }
+
+    .leaflet-popup-content-wrapper,
+    .leaflet-tooltip.school-hover-card {
+      overflow: hidden;
+      border: 2px solid color-mix(in srgb, var(--blue) 72%, var(--navy) 28%);
+      border-radius: 18px;
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 18px 40px rgba(15,23,42,.24);
+      color: var(--text);
+    }
+
+    .leaflet-popup-content-wrapper {
+      padding: 0;
+    }
+
+    .leaflet-popup-content {
+      width: min(280px, 76vw) !important;
+      margin: 0;
+      font-family: var(--font-body);
+      font-weight: 700;
+    }
+
+    .leaflet-popup-tip {
+      border: 2px solid color-mix(in srgb, var(--blue) 72%, var(--navy) 28%);
+      background: #fff;
+      box-shadow: 0 10px 22px rgba(15,23,42,.18);
+    }
+
+    .leaflet-tooltip.school-hover-card {
+      width: min(330px, 78vw);
+      padding: 0;
+      opacity: 1;
+      pointer-events: none;
+    }
+
+    .leaflet-tooltip.school-hover-card::before {
+      display: none;
+    }
+
+    .map-card {
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .map-card-header {
+      position: relative;
+      padding: 12px 118px 10px 12px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--navy), var(--blue));
+      border-bottom: 3px solid var(--gold);
+    }
+
+    .map-card-eyebrow {
+      margin: 0 0 3px;
+      color: #BAE6FD;
+      font-family: var(--font-heading);
+      font-size: 7px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .map-card-title {
+      margin: 0;
+      font-family: var(--font-heading);
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+    }
+
+    .map-card-location {
+      margin-top: 4px;
+      color: #E0F2FE;
+      font-family: var(--font-body);
+      font-size: 8px;
+      font-weight: 900;
+      line-height: 1.15;
+      opacity: .96;
+    }
+
+    .map-card-status {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      max-width: 104px;
+      margin-top: 0;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.16);
+      color: #E0F2FE;
+      font-size: 7px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: .08em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .map-card-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--gold);
+      box-shadow: 0 0 0 2px rgba(255,255,255,.22);
+    }
+
+    .map-kpi-table-wrap {
+      padding: 9px 10px 10px;
+      background: #F8FCFF;
+    }
+
+    .map-kpi-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid #BAE6FD;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: inset 0 -2px 0 rgba(251,191,36,.42);
+      table-layout: auto;
+    }
+
+    .map-kpi-table th,
+    .map-kpi-table td {
+      position: static;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      padding: 7px 9px;
+      border-bottom: 1px solid #E2E8F0;
+      background: transparent;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .map-kpi-table tr:last-child th,
+    .map-kpi-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .map-kpi-table th {
+      width: 58%;
+      color: var(--muted);
+      font-family: var(--font-heading);
+      font-size: 7px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: .12em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .map-kpi-table td {
+      width: 42%;
+      color: var(--navy);
+      font-family: var(--font-heading);
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.05;
+      text-align: right;
+      letter-spacing: -0.02em;
+    }
+
+    .map-kpi-table.two-column th {
+      width: 28%;
+    }
+
+    .map-kpi-table.two-column td {
+      width: 22%;
+    }
+
+    .map-kpi-table.two-column th:nth-child(3) {
+      border-left: 1px solid #E2E8F0;
+    }
+
+    .map-kpi-table .empty-cell {
+      display: none;
+    }
+
+    .map-card-body {
+      display: grid;
+      gap: 0;
+      padding: 8px 12px 10px;
+    }
+
+    .map-card-row {
+      display: grid;
+      grid-template-columns: minmax(92px, .9fr) minmax(0, 1.2fr);
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid #E2E8F0;
+      font-size: 9.5px;
+      line-height: 1.15;
+    }
+
+    .map-card-row:last-child {
+      border-bottom: 0;
+    }
+
+    .map-card-label {
+      color: var(--muted);
+      font-family: var(--font-heading);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .map-card-value {
+      color: var(--navy);
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .detail-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(8, 49, 95, .42);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+    }
+
+    .detail-modal.open {
+      display: grid;
+    }
+
+    .detail-modal-panel {
+      width: min(860px, 94vw);
+      max-height: min(760px, 88vh);
+      overflow: hidden;
+      border: 3px solid color-mix(in srgb, var(--blue) 72%, var(--navy) 28%);
+      border-radius: 26px;
+      background: #fff;
+      box-shadow: 0 28px 70px rgba(15,23,42,.34);
+      animation: detailModalIn .22s cubic-bezier(.16, 1, .3, 1) both;
+    }
+
+    @keyframes detailModalIn {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .detail-modal-top {
+      position: relative;
+      min-height: 106px;
+      padding: 16px 106px 14px 18px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--navy), var(--blue));
+      border-bottom: 4px solid var(--gold);
+    }
+
+    .detail-modal-kicker {
+      margin: 0 0 5px;
+      color: #BAE6FD;
+      font-family: var(--font-heading);
+      font-size: 8px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .detail-modal-title {
+      margin: 0;
+      font-family: var(--font-heading);
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+    }
+
+    .detail-modal-location {
+      margin-top: 5px;
+      color: #E0F2FE;
+      font-family: var(--font-body);
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1.15;
+      text-transform: uppercase;
+      opacity: .96;
+    }
+
+    .detail-modal-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      width: fit-content;
+      max-width: min(100%, 360px);
+      margin-top: 9px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.16);
+      color: #E0F2FE;
+      font-size: 7px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: .08em;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .detail-modal-actions {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .detail-modal-print,
+    .detail-modal-close {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(255,255,255,.12);
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .detail-modal-print {
+      font-size: 15px;
+    }
+
+    .detail-modal-close {
+      font-size: 20px;
+    }
+
+    .detail-modal-print:hover,
+    .detail-modal-close:hover {
+      background: rgba(255,255,255,.22);
+    }
+
+    .detail-modal-body {
+      max-height: calc(min(720px, 86vh) - 72px);
+      overflow: auto;
+      background: #F8FCFF;
+    }
+
+    .detail-modal-body .map-card {
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .detail-modal-body .map-card-header {
+      display: none;
+    }
+
+    .detail-modal-body .map-card-body {
+      padding: 14px 18px 18px;
+      background: #fff;
+    }
+
+    .detail-modal-body .map-card-row {
+      grid-template-columns: minmax(140px, .85fr) minmax(0, 1.15fr);
+      padding: 9px 0;
+      font-size: 11px;
+    }
+
+    .detail-modal-body .map-card-label {
+      font-size: 9px;
+    }
+
+    .modal-section-grid {
+      display: grid;
+      gap: 12px;
+      padding: 14px 18px 42px;
+      background: #F8FCFF;
+    }
+
+    .modal-section {
+      overflow: hidden;
+      border: 1px solid #BAE6FD;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 8px 18px rgba(15,23,42,.07);
+    }
+
+    .modal-section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      color: var(--navy);
+      background: linear-gradient(90deg, #E0F2FE, #F8FCFF);
+      border-bottom: 1px solid #BAE6FD;
+      font-family: var(--font-heading);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .modal-section-title::before {
+      content: "";
+      display: block;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--gold);
+      box-shadow: 0 0 0 3px rgba(251,191,36,.18);
+      flex: 0 0 auto;
+    }
+
+    .modal-section-body {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px;
+      padding: 8px 12px 10px;
+    }
+
+    .modal-section .map-card-row {
+      grid-template-columns: minmax(100px, .9fr) minmax(0, 1.1fr);
+      padding: 8px 0;
+      font-size: 10.5px;
+    }
+
+    .modal-section .map-card-label {
+      font-size: 8.5px;
+    }
+
+    .modal-section .map-card-value {
+      font-size: 10.5px;
+    }
+
+    .modal-section .map-card-row.modal-highlight-row {
+      grid-column: 1 / -1;
+      margin: 4px 0;
+      padding: 11px 12px;
+      border: 2px solid color-mix(in srgb, var(--gold) 72%, #F97316 28%);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(251,191,36,.22), rgba(224,242,254,.78));
+      box-shadow: 0 8px 18px rgba(251,191,36,.18);
+    }
+
+    .modal-section .map-card-row.modal-highlight-row .map-card-label {
+      color: #92400E;
+    }
+
+    .modal-section .map-card-row.modal-highlight-row .map-card-value {
+      color: var(--navy);
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+
+    .modal-highlight-strip {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 4px 0;
+    }
+
+    .modal-highlight-chip {
+      display: grid;
+      align-content: center;
+      min-height: 56px;
+      padding: 11px 12px;
+      border: 2px solid color-mix(in srgb, var(--gold) 72%, #F97316 28%);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(251,191,36,.22), rgba(224,242,254,.78));
+      box-shadow: 0 8px 18px rgba(251,191,36,.18);
+    }
+
+    .modal-highlight-chip .map-card-label {
+      color: #92400E;
+      font-size: 8px;
+    }
+
+    .modal-highlight-chip .map-card-value {
+      color: var(--navy);
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    @media (max-width: 680px) {
+      .modal-section-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .school-marker {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      color: #111827;
+      background: #F8FAFC;
+      border: 2px solid rgba(255,255,255,.95);
+      border-radius: 999px;
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 900;
+      box-shadow: 0 3px 8px rgba(0,0,0,.28);
+      transform-origin: center;
+      will-change: transform, box-shadow;
+      transition: transform .22s ease, box-shadow .22s ease;
+    }
+
+    .school-marker.fly-focus {
+      animation: markerFlyFocus .92s cubic-bezier(.16, 1, .3, 1) both;
+      box-shadow: 0 0 0 8px rgba(251, 191, 36, .28), 0 9px 22px rgba(15,23,42,.38);
+    }
+
+    @keyframes markerFlyFocus {
+      0% {
+        transform: scale(.72);
+        filter: saturate(.86);
+      }
+      55% {
+        transform: scale(1.34);
+        filter: saturate(1.25);
+      }
+      100% {
+        transform: scale(1);
+        filter: saturate(1);
+      }
+    }
+
+    .school-marker.critical {
+      color: #fff;
+      background: #EF4444;
+    }
+
+    .school-marker.success {
+      color: #fff;
+      background: #22C55E;
+    }
+
+    .school-marker.warning {
+      color: #111827;
+      background: #FBBF24;
+    }
+
+    .school-marker.info {
+      color: #fff;
+      background: #3B82F6;
+    }
+
+    .school-marker.neutral {
+      color: #334155;
+      background: #E2E8F0;
+    }
+
+    .school-marker.industry {
+      color: #fff;
+      background: #7C3AED;
+    }
+
+    .school-cluster {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      color: var(--navy);
+      background: #fff;
+      border: 3px solid color-mix(in srgb, var(--blue) 72%, var(--navy) 28%);
+      border-radius: 999px;
+      font-family: var(--font-heading);
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 4px 12px rgba(15,23,42,.28);
+    }
+
+    tbody tr {
+      cursor: pointer;
+      transition: background .15s ease, color .15s ease;
+    }
+
+    tbody tr:hover,
+    tbody tr.active-row {
+      background: var(--blue-50);
+      color: var(--navy);
+    }
+
+    .map-mode-control {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      min-width: 44px;
+      max-width: 44px;
+      min-height: 44px;
+      padding: 8px;
+      overflow: hidden;
+      border: 1px solid #CBD5E1;
+      border-radius: 18px;
+      background: rgba(255,255,255,.94);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, .18);
+      color: var(--navy);
+      transition: width .22s ease, max-width .22s ease, min-height .22s ease, padding .22s ease, border-radius .22s ease;
+    }
+
+    .map-mode-control:hover,
+    .map-mode-control:focus-within {
+      place-items: stretch;
+      width: 154px;
+      max-width: 154px;
+      min-height: 184px;
+      padding: 12px;
+      border-radius: 22px;
+    }
+
+    .map-mode-title {
+      width: max-content;
+      max-height: 0;
+      margin: 0;
+      overflow: hidden;
+      font-family: var(--font-heading);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity .16s ease, transform .16s ease, max-height .16s ease, margin .16s ease;
+    }
+
+    .map-mode-control:hover .map-mode-title,
+    .map-mode-control:focus-within .map-mode-title {
+      max-height: 16px;
+      margin: 0 0 8px;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .map-mode-options {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      width: 130px;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity .16s ease, max-height .18s ease;
+    }
+
+    .map-mode-control:hover .map-mode-options,
+    .map-mode-control:focus-within .map-mode-options {
+      max-height: 136px;
+      opacity: 1;
+    }
+
+    .map-mode-option {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 7px;
+      width: 100%;
+      min-height: 28px;
+      padding: 0 10px 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #F8FCFF;
+      color: var(--blue);
+      font-family: var(--font-body);
+      font-size: 8px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity .16s ease, transform .16s ease, color .16s ease, background .16s ease, border-color .16s ease;
+    }
+
+    .map-mode-control:hover .map-mode-option,
+    .map-mode-control:focus-within .map-mode-option {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .map-mode-radio {
+      width: 12px;
+      height: 12px;
+      margin: 0;
+      accent-color: var(--navy);
+      flex: 0 0 auto;
+    }
+
+    .map-mode-option.active {
+      color: #fff;
+      border-color: var(--navy);
+      background: var(--navy);
+      box-shadow: inset 0 -2px 0 var(--gold);
+    }
+
+    .map-mode-option.active .map-mode-radio {
+      accent-color: var(--gold);
+    }
+
+    .map-mode-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      margin: 0;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--navy);
+      box-shadow: inset 0 -2px 0 var(--gold);
+      z-index: 2;
+      pointer-events: none;
+      transition: opacity .14s ease;
+    }
+
+    .map-mode-icon svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+      stroke: #fff;
+      fill: none;
+    }
+
+    .map-mode-control:hover .map-mode-icon,
+    .map-mode-control:focus-within .map-mode-icon {
+      opacity: 0;
+    }
+
+    .map-legend {
+      padding: 8px 9px;
+      border: 1px solid #CBD5E1;
+      border-radius: 3px;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, .18);
+      color: #475569;
+      line-height: 1.2;
+    }
+
+    .map-legend h4 {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-family: var(--font-heading);
+      font-size: 7px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 4px 0;
+      font-size: 7px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+    }
+
+    .dot.red { background: #EF4444; }
+    .dot.green { background: #22C55E; }
+    .dot.orange { background: #F97316; }
+    .dot.yellow { background: #FBBF24; }
+    .dot.blue { background: #3B82F6; }
+    .dot.gray { background: #94A3B8; }
+    .dot.purple { background: #7C3AED; }
+
+    @media (max-width: 1180px) {
+      .dashboard-body {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+
+      .command-bar {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .filter-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .kpis {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .command-bar {
+        border-radius: 28px;
+      }
+    }
+
+    @media (max-width: 880px) {
+      body {
+        padding-bottom: 82px;
+        background-attachment: scroll;
+      }
+
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        width: auto;
+        height: auto;
+        padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+        overflow: visible;
+        border-right: 0;
+        border-top: 1px solid rgba(255,255,255,.46);
+        background:
+          radial-gradient(ellipse at 18% 0%, color-mix(in srgb, var(--gold) 18%, transparent), transparent 48%),
+          linear-gradient(90deg, color-mix(in srgb, var(--blue) 80%, var(--navy) 20%), var(--blue-600));
+      }
+
+      .brand,
+      .sidebar-title,
+      .sidebar-label,
+      .sidebar-action {
+        display: none;
+      }
+
+      .nav {
+        grid-template-columns: repeat(7, minmax(76px, 1fr));
+        gap: 4px;
+        overflow-x: auto;
+      }
+
+      .nav button {
+        display: grid;
+        place-items: center;
+        min-height: 48px;
+        padding: 6px 3px;
+        border-radius: 16px;
+        font-size: 8px;
+        line-height: 1;
+        text-align: center;
+      }
+
+      .nav button::before {
+        margin-bottom: 2px;
+      }
+
+      .main {
+        padding: 12px;
+      }
+
+      .dashboard-body,
+      .command-bar,
+      .filter-grid,
+      .kpis,
+      .summary-body {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-body,
+      .map-panel {
+        min-height: 0;
+      }
+
+      #resourceMap {
+        height: 420px;
+        min-height: 420px;
+      }
+
+      .topbar {
+        display: grid;
+        min-height: 104px;
+        margin: 14px 0 16px;
+        padding: 18px 22px;
+      }
+
+      .topbar::before {
+        width: 100%;
+        clip-path: none;
+      }
+
+      .topbar::after {
+        display: none;
+      }
+
+      .page-title {
+        max-width: 100%;
+      }
+
+      .topbar-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="sidebar-title" aria-label="Resource Mapping dashboard header">
+        <div class="sidebar-title-mark">RM</div>
+        <div class="sidebar-title-copy">
+          <h2>Resource Mapping</h2>
+          <p>Dashboard modules</p>
+        </div>
+      </div>
+
+      <div class="sidebar-label">Sections</div>
+      <nav class="nav" aria-label="Dashboard sections">
+        <button type="button" data-tab="teaching" data-icon="📚"><span class="nav-copy"><span class="nav-title">Teaching Deployment</span><span class="nav-desc">Teacher shortage, excess, filling-up rates, and school-level deployment.</span></span></button>
+        <button type="button" data-tab="nonTeaching" data-icon="🗂️"><span class="nav-copy"><span class="nav-title">Non-teaching Deployment</span><span class="nav-desc">AO II/PDO I coverage, clustering status, and plantilla details.</span></span></button>
+        <button type="button" data-tab="classrooms" data-icon="🏫"><span class="nav-copy"><span class="nav-title">Classrooms</span><span class="nav-desc">Enrolment, classroom inventory, requirements, shortage, and shifting.</span></span></button>
+        <button type="button" data-tab="congestion" data-icon="📊" hidden>Congestion</button>
+        <button type="button" data-tab="industries" data-icon="🏭" hidden>Industries (SHS)</button>
+        <button type="button" data-tab="facilities" data-icon="🏗️" hidden>Facilities</button>
+        <button type="button" data-tab="lastMile" data-icon="🛤️" hidden><span class="nav-copy"><span class="nav-title">Last Mile Schools</span><span class="nav-desc">Hardship, travel, access, utilities, conflict, and isolation indicators.</span></span></button>
+      </nav>
+
+
+    </aside>
+
+    <main class="main">
+      <header class="topbar" aria-label="Selected dashboard section header">
+        <div class="page-title">
+          <div class="page-eyebrow">Department of Education | Human Resource and Organizational Development and Infrastructure Strand</div>
+          <h1 id="pageHeading"></h1>
+          <p id="pageSubtitle"></p>
+        </div>
+
+
+      </header>
+
+      <section class="dashboard-body" aria-label="Dashboard data and map workspace">
+        <section class="left-panel" aria-label="Data controls, KPIs, and table">
+          <section class="command-bar" aria-label="Data controls and geographic filters">
+            <div class="filter-header">
+              <div class="filter-heading">
+                <h2>Data Controls</h2>
+                <p>Filter the active file page. Multiple files are selected from the sidebar, not from tabs inside the main content.</p>
+              </div>
+            </div>
+
+            <select class="select-pill" id="regionFilter">
+              <option>All Regions</option>
+              <option>Region I</option>
+              <option>NCR</option>
+              <option>Region IV-A</option>
+            </select>
+
+            <select class="select-pill" id="divisionFilter">
+              <option>All Divisions</option>
+              <option>Alaminos City</option>
+              <option>Quezon City</option>
+              <option>Cebu City</option>
+            </select>
+
+            <select class="select-pill" id="municipalityFilter">
+              <option>All Municipalities</option>
+              <option>Alaminos City</option>
+              <option>Bolinao</option>
+              <option>Lingayen</option>
+            </select>
+
+            <select class="select-pill" id="legislativeDistrictFilter">
+              <option>All Legislative Districts</option>
+              <option>1st Legislative District</option>
+              <option>2nd Legislative District</option>
+              <option>3rd Legislative District</option>
+            </select>
+
+            <select class="select-pill" id="schoolDistrictFilter">
+              <option>All School Districts</option>
+              <option>District I</option>
+              <option>District II</option>
+              <option>District III</option>
+            </select>
+
+            <button class="reset-pill" type="button">Reset</button>
+          </section>
+
+          <section class="kpis" aria-label="Overview metrics">
+            <article class="kpi">
+              <div class="kpi-copy">
+                <div class="kpi-label" id="kpiOneLabel"></div>
+                <div class="kpi-value" id="kpiOneValue"></div>
+                <div class="kpi-subtitle" id="kpiOneSubtitle"></div>
+              </div>
+            </article>
+
+            <article class="kpi">
+              <div class="kpi-copy">
+                <div class="kpi-label" id="kpiTwoLabel"></div>
+                <div class="kpi-value" id="kpiTwoValue"></div>
+                <div class="kpi-subtitle" id="kpiTwoSubtitle"></div>
+              </div>
+            </article>
+
+            <article class="kpi">
+              <div class="kpi-copy">
+                <div class="kpi-label" id="kpiThreeLabel"></div>
+                <div class="kpi-value" id="kpiThreeValue"></div>
+                <div class="kpi-subtitle" id="kpiThreeSubtitle"></div>
+              </div>
+            </article>
+
+            <article class="kpi">
+              <div class="kpi-copy">
+                <div class="kpi-label" id="kpiFourLabel"></div>
+                <div class="kpi-value" id="kpiFourValue"></div>
+                <div class="kpi-subtitle" id="kpiFourSubtitle"></div>
+              </div>
+            </article>
+
+            <article class="kpi">
+              <div class="kpi-copy">
+                <div class="kpi-label" id="kpiFiveLabel"></div>
+                <div class="kpi-value" id="kpiFiveValue"></div>
+                <div class="kpi-subtitle" id="kpiFiveSubtitle"></div>
+              </div>
+            </article>
+
+            <article class="kpi">
+              <div class="kpi-copy">
+                <div class="kpi-label" id="kpiSixLabel"></div>
+                <div class="kpi-value" id="kpiSixValue"></div>
+                <div class="kpi-subtitle" id="kpiSixSubtitle"></div>
+              </div>
+            </article>
+
+            <article class="kpi">
+              <div class="kpi-copy">
+                <div class="kpi-label" id="kpiSevenLabel"></div>
+                <div class="kpi-value" id="kpiSevenValue"></div>
+                <div class="kpi-subtitle" id="kpiSevenSubtitle"></div>
+              </div>
+            </article>
+
+            <article class="kpi">
+              <div class="kpi-copy">
+                <div class="kpi-label" id="kpiEightLabel"></div>
+                <div class="kpi-value" id="kpiEightValue"></div>
+                <div class="kpi-subtitle" id="kpiEightSubtitle"></div>
+              </div>
+            </article>
+          </section>
+
+          <article class="card table-card">
+            <div class="card-title" id="tableTitle"></div>
+            <div class="table-wrap">
+              <table id="dataTable"></table>
+            </div>
+
+            <footer class="pager">
+              <span>Rows per page:</span>
+              <strong id="rowsPerPage">100</strong>
+              <span id="pageCount"></span>
+              <button type="button" id="tableFirst" aria-label="First page">‹</button>
+              <button type="button" id="tablePrev" aria-label="Previous page">‹</button>
+              <button type="button" id="tableNext" aria-label="Next page">›</button>
+              <button type="button" id="tableLast" aria-label="Last page">›|</button>
+            </footer>
+          </article>
+        </section>
+
+        <article class="card map-panel" aria-label="Map panel">
+          <div class="card-title" id="mapTitle"></div>
+          <div id="resourceMap" aria-label="OpenStreetMap centered on the Philippines"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div class="detail-modal" id="schoolDetailModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="schoolDetailModalTitle">
+    <div class="detail-modal-panel" role="document">
+      <div class="detail-modal-top">
+        <div class="detail-modal-kicker" id="schoolDetailModalKicker">School Detail</div>
+        <h2 class="detail-modal-title" id="schoolDetailModalTitle">School Detail</h2>
+        <div class="detail-modal-location" id="schoolDetailModalLocation"></div>
+        <div class="detail-modal-status" id="schoolDetailModalStatus"><span class="map-card-status-dot"></span>Balanced</div>
+        <div class="detail-modal-actions">
+          <button type="button" class="detail-modal-print" id="schoolDetailModalPrint" aria-label="Open printable school profile">⎙</button>
+          <button type="button" class="detail-modal-close" id="schoolDetailModalClose" aria-label="Close school detail">×</button>
+        </div>
+      </div>
+      <div class="detail-modal-body" id="schoolDetailModalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const PHILIPPINES_CENTER = [12.8797, 121.7740];
+    const PHILIPPINES_ZOOM = 5;
+    const CSV_CACHE_BUST = Date.now();
+
+    const schoolPoints = [
+      { name: "Alaminos Central School", lat: 16.1561, lng: 119.9818, value: 25, critical: true },
+      { name: "Alos ES", lat: 16.1462, lng: 119.9927, value: 3, critical: false },
+      { name: "Amandiego ES", lat: 16.1325, lng: 120.0041, value: 5, critical: false },
+      { name: "Amangbangan ES", lat: 16.1280, lng: 119.9702, value: 8, critical: false },
+      { name: "Balangobong ES", lat: 16.1145, lng: 120.0037, value: 13, critical: false },
+      { name: "Balayang ES", lat: 16.0984, lng: 119.9992, value: 10, critical: false },
+      { name: "Baleyadaan ES", lat: 16.0812, lng: 120.0154, value: 2, critical: false },
+      { name: "Bisocol ES", lat: 16.1224, lng: 120.0494, value: 4, critical: false }
+    ];
+
+    const DATA_FILE_BY_TAB = {
+      teaching: "stride_school_unique.csv",
+      nonTeaching: "stride_school_unique.csv",
+      classrooms: "stride_school_unique.csv",
+      congestion: "stride_school_unique.csv",
+      facilities: "stride_school_unique.csv",
+      lastMile: "stride_school_unique.csv",
+      industries: "stride_shs_industries.csv"
+    };
+
+    const SCHOOL_META_FIELDS = {
+      region: ["beis_region", "region"],
+      division: ["beis_division", "division"],
+      schoolId: ["school_id", "school id"],
+      municipality: ["municipality"],
+      legislativeDistrict: ["legislative_district", "legislative district"],
+      district: ["district", "school district"],
+      latitude: ["latitude"],
+      longitude: ["longitude"]
+    };
+
+    const CSV_COLUMN_CONFIG = {
+      teaching: {
+        schoolBased: true,
+        nameField: ["school_name", "school name", "school"],
+        columns: ["School Name", "ES Excess", "ES Shortage", "JHS Excess", "JHS Shortage", "SHS Excess", "SHS Shortage", "Total Excess", "Total Shortage", "Total Teachers"],
+        fields: [
+          ["school_name", "school name", "school"],
+          ["es_excess", "es excess"],
+          ["es_shortage", "es shortage"],
+          ["jhs_excess", "jhs excess"],
+          ["jhs_shortage", "jhs shortage"],
+          ["shs_excess", "shs excess"],
+          ["shs_shortage", "shs shortage"],
+          ["total_excess", "total excess"],
+          ["total_shortage", "total shortage"],
+          ["total_teachers", "total teachers"]
+        ]
+      },
+      nonTeaching: {
+        schoolBased: true,
+        nameField: ["school_name", "school name", "school"],
+        columns: ["School Name", "Clustering Status", "Plantilla Number"],
+        fields: [
+          ["school_name", "school name", "school"],
+          ["clustering_status", "clustering status"],
+          ["plantilla_number", "plantilla number"]
+        ]
+      },
+      classrooms: {
+        schoolBased: true,
+        nameField: ["school_name", "school name", "school"],
+        columns: ["School Name", "Total Enrolment", "Classroom Inventory", "Classroom Requirement", "Estimated Classroom Shortage", "Shifting"],
+        fields: [
+          ["school_name", "school name", "school"],
+          ["total_enrolment", "total enrolment", "total enrollment"],
+          ["total_classrooms", "total classrooms", "instructional_rooms", "instructional rooms", "classroom inventory", "classrooms inventory"],
+          ["classroom_requirement", "classroom requirement"],
+          ["estimated_classroom_shortage", "estimated classroom shortage", "classroom shortage"],
+          ["shifting"]
+        ]
+      },
+      congestion: {
+        schoolBased: true,
+        nameField: ["school_name", "school name", "school"],
+        columns: ["School Name", "Total Enrolment", "Total Classrooms", "Congestion Ratio"],
+        fields: [
+          ["school_name", "school name", "school"],
+          ["total_enrolment", "total enrolment", "total enrollment"],
+          ["total_classrooms", "total classrooms", "instructional_rooms", "instructional rooms"],
+          function(record) {
+            const enrolment = toNumber(getCsvValue(record, ["total_enrolment", "total enrolment", "total enrollment"], ""));
+            const rooms = toNumber(getCsvValue(record, ["total_classrooms", "total classrooms", "instructional_rooms", "instructional rooms"], ""));
+            return enrolment !== null && rooms ? (enrolment / rooms).toFixed(2) : "";
+          }
+        ]
+      },
+      facilities: {
+        schoolBased: true,
+        nameField: ["school_name", "school name", "school"],
+        columns: ["School Name", "Ownership Type", "Electricity Source", "Water Source", "No Piped Water", "No Grid Electricity", "No Electricity"],
+        fields: [
+          ["school_name", "school name", "school"],
+          ["ownership_type", "ownership type"],
+          ["electricity_source", "electricity source"],
+          ["water_source", "water source"],
+          ["no_piped_water", "no piped water"],
+          ["no_grid_electricity", "no grid electricity"],
+          ["no_electricity", "no electricity"]
+        ]
+      },
+      lastMile: {
+        schoolBased: true,
+        nameField: ["school_name", "school name", "school"],
+        columns: ["School Name", "SHA 2024 Index", "Travel Time", "Travel Cost", "No Piped Water", "No Grid Electricity", "Conflict", "TLS", "ISO Index"],
+        fields: [
+          ["school_name", "school name", "school"],
+          ["sha_2024_index", "sha 2024 index"],
+          ["travel_time", "travel time"],
+          ["travel_cost", "travel cost"],
+          ["no_piped_water", "no piped water"],
+          ["no_grid_electricity", "no grid electricity"],
+          ["conflict"],
+          ["tls"],
+          ["iso_index", "iso index"]
+        ]
+      },
+      industries: {
+        schoolBased: false,
+        nameField: ["company"],
+        columns: ["Region", "Province", "Company", "Sector", "Industry", "Latitude", "Longitude"],
+        fields: [
+          ["region"],
+          ["province"],
+          ["company"],
+          ["sector"],
+          ["industry"],
+          ["latitude"],
+          ["longitude"]
+        ],
+        latitudeField: ["latitude"],
+        longitudeField: ["longitude"]
+      }
+    };
+
+    const csvCache = {};
+    const processedTabs = {};
+    const GEO_FILTER_FILE = "stride_school_unique.csv";
+    const GEO_FILTER_ORDER = ["region", "division", "municipality", "legislativeDistrict", "district"];
+    const GEO_FILTER_LABELS = {
+      region: "Regions",
+      division: "Divisions",
+      municipality: "Municipalities",
+      legislativeDistrict: "Legislative Districts",
+      district: "School Districts"
+    };
+    const GEO_FILTER_ELEMENTS = {
+      region: "regionFilter",
+      division: "divisionFilter",
+      municipality: "municipalityFilter",
+      legislativeDistrict: "legislativeDistrictFilter",
+      district: "schoolDistrictFilter"
+    };
+    const TABLE_PAGE_SIZE = 100;
+    const MAP_MARKER_CHUNK_SIZE = 250;
+    let activeTabKey = "teaching";
+    let mapRenderToken = 0;
+    let tablePageIndex = 0;
+    let geoRecords = [];
+    let columnFilters = {};
+    let columnFilterTimers = {};
+    let activeColumnFilter = null;
+    let tableSortColumn = "";
+    let tableSortDirection = "asc";
+
+    function yieldToBrowser() {
+      return new Promise(function(resolve) {
+        if ("requestIdleCallback" in window) {
+          window.requestIdleCallback(resolve, { timeout: 120 });
+        } else {
+          setTimeout(resolve, 0);
+        }
+      });
+    }
+
+    function normalizeCsvHeader(value) {
+      return String(value || "")
+        .replace(/^﻿/, "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_\-]+/g, " ");
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let quote = false;
+
+      for (let index = 0; index < text.length; index++) {
+        const character = text[index];
+        const next = text[index + 1];
+
+        if (character === '"' && quote && next === '"') {
+          cell += '"';
+          index++;
+        } else if (character === '"') {
+          quote = !quote;
+        } else if (character === "," && !quote) {
+          row.push(cell);
+          cell = "";
+        } else if ((character === "\n" || character === "\r") && !quote) {
+          if (character === "\r" && next === "\n") index++;
+          row.push(cell);
+          if (row.some(function(value) { return String(value).trim() !== ""; })) rows.push(row);
+          row = [];
+          cell = "";
+        } else {
+          cell += character;
+        }
+      }
+
+      if (cell || row.length) {
+        row.push(cell);
+        if (row.some(function(value) { return String(value).trim() !== ""; })) rows.push(row);
+      }
+
+      if (!rows.length) return [];
+
+      const headers = rows.shift().map(normalizeCsvHeader);
+
+      return rows.map(function(values) {
+        const record = {};
+        headers.forEach(function(header, index) {
+          record[header] = String(values[index] || "").trim();
+        });
+        return record;
+      });
+    }
+
+    function isBlankCsvValue(value) {
+      const normalized = String(value || "").trim();
+      return ["", "NA", "N/A", "#N/A", "None", "none"].includes(normalized);
+    }
+
+    function toNumber(value) {
+      const cleaned = String(value || "").replace(/[%₱,]/g, "").trim();
+      if (isBlankCsvValue(cleaned)) return null;
+      const parsed = Number(cleaned);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function getCsvValue(record, aliases, fallback) {
+      if (typeof aliases === "function") {
+        return aliases(record) || fallback || "";
+      }
+
+      for (let index = 0; index < aliases.length; index++) {
+        const key = normalizeCsvHeader(aliases[index]);
+        const value = record[key];
+
+        if (value !== undefined && !isBlankCsvValue(value)) {
+          return String(value).trim();
+        }
+      }
+
+      return fallback || "";
+    }
+
+    function csvFallbackValue(column, rowIndex) {
+      if (column === "Region") return "Region I";
+      if (column === "Division") return "Alaminos City";
+      if (column === "School ID") return "101" + String(rowIndex + 1).padStart(3, "0");
+      if (/shortage|excess|inventory|classrooms|enrolment|enrollment|teachers|rooms|requirement/i.test(column)) return "0";
+      return "";
+    }
+
+    function buildCsvMeta(record, rowIndex) {
+      return {
+        region: getCsvValue(record, SCHOOL_META_FIELDS.region, "Region I"),
+        division: getCsvValue(record, SCHOOL_META_FIELDS.division, "Alaminos City"),
+        schoolId: getCsvValue(record, SCHOOL_META_FIELDS.schoolId, "101" + String(rowIndex + 1).padStart(3, "0")),
+        municipality: getCsvValue(record, SCHOOL_META_FIELDS.municipality, ""),
+        legislativeDistrict: getCsvValue(record, SCHOOL_META_FIELDS.legislativeDistrict, ""),
+        district: getCsvValue(record, SCHOOL_META_FIELDS.district, "")
+      };
+    }
+
+    function buildPopupDetails(config, record, row, meta) {
+      const details = [];
+      const usedLabels = {};
+
+      function addDetail(label, value) {
+        if (!label || usedLabels[label] || isBlankCsvValue(value)) return;
+        usedLabels[label] = true;
+        details.push([label, value]);
+      }
+
+      if (config.schoolBased !== false) {
+        addDetail("Region", meta.region);
+        addDetail("Division", meta.division);
+        addDetail("School ID", meta.schoolId);
+        addDetail("Municipality", meta.municipality);
+        addDetail("Legislative District", meta.legislativeDistrict);
+        addDetail("School District", meta.district);
+      }
+
+      config.columns.forEach(function(column, index) {
+        addDetail(column, row[index]);
+      });
+
+      return details;
+    }
+
+    function applyCsvDataToView(tabKey, records) {
+      const config = CSV_COLUMN_CONFIG[tabKey];
+      if (!config || !records.length) return;
+
+      const filteredRecords = records.filter(function(record) {
+        return !isBlankCsvValue(getCsvValue(record, config.nameField, ""));
+      });
+
+      views[tabKey].schoolBased = config.schoolBased !== false;
+      views[tabKey].columns = config.columns.slice();
+      views[tabKey].rows = filteredRecords.map(function(record, rowIndex) {
+        return config.columns.map(function(column, columnIndex) {
+          return getCsvValue(record, config.fields[columnIndex], csvFallbackValue(column, rowIndex));
+        });
+      });
+      views[tabKey].metaRows = filteredRecords.map(buildCsvMeta);
+      views[tabKey].rawRows = filteredRecords;
+      views[tabKey].pointRows = filteredRecords.map(function(record, rowIndex) {
+        const lat = toNumber(getCsvValue(record, config.latitudeField || SCHOOL_META_FIELDS.latitude, ""));
+        const lng = toNumber(getCsvValue(record, config.longitudeField || SCHOOL_META_FIELDS.longitude, ""));
+        return {
+          name: getCsvValue(record, config.nameField, "Record " + (rowIndex + 1)),
+          lat: lat,
+          lng: lng
+        };
+      });
+      views[tabKey].popupRows = views[tabKey].rows.map(function(row, rowIndex) {
+        return buildPopupDetails(config, filteredRecords[rowIndex], row, views[tabKey].metaRows[rowIndex]);
+      });
+    }
+
+    async function loadCsvForTab(tabKey) {
+      const fileName = DATA_FILE_BY_TAB[tabKey];
+      if (!fileName || processedTabs[tabKey]) return;
+
+      if (!csvCache[fileName]) {
+        const response = await fetch(fileName + "?v=" + CSV_CACHE_BUST, { cache: "no-store" });
+        if (!response.ok) throw new Error("Could not load " + fileName);
+        const csvText = await response.text();
+        await yieldToBrowser();
+        csvCache[fileName] = parseCsv(csvText);
+      }
+
+      await yieldToBrowser();
+      applyCsvDataToView(tabKey, csvCache[fileName]);
+      processedTabs[tabKey] = true;
+    }
+
+    async function loadGeoFilterRecords() {
+      if (!csvCache[GEO_FILTER_FILE]) {
+        const response = await fetch(GEO_FILTER_FILE + "?v=" + CSV_CACHE_BUST, { cache: "no-store" });
+        if (!response.ok) throw new Error("Could not load " + GEO_FILTER_FILE);
+        const csvText = await response.text();
+        await yieldToBrowser();
+        csvCache[GEO_FILTER_FILE] = parseCsv(csvText);
+      }
+
+      geoRecords = csvCache[GEO_FILTER_FILE].filter(function(record) {
+        return !isBlankCsvValue(getCsvValue(record, SCHOOL_META_FIELDS.region, ""));
+      });
+    }
+
+    function getGeoSelect(key) {
+      return document.getElementById(GEO_FILTER_ELEMENTS[key]);
+    }
+
+    function getGeoValue(key) {
+      const select = getGeoSelect(key);
+      return select ? select.value : "";
+    }
+
+    function recordMatchesHigherFilters(record, targetKey) {
+      const targetIndex = GEO_FILTER_ORDER.indexOf(targetKey);
+
+      return GEO_FILTER_ORDER.slice(0, targetIndex).every(function(parentKey) {
+        const selected = getGeoValue(parentKey);
+        if (!selected) return true;
+
+        const aliases = parentKey === "district" ? SCHOOL_META_FIELDS.district : SCHOOL_META_FIELDS[parentKey];
+        return getCsvValue(record, aliases, "") === selected;
+      });
+    }
+
+    function populateGeoSelect(key) {
+      const select = getGeoSelect(key);
+      if (!select) return;
+
+      const aliases = key === "district" ? SCHOOL_META_FIELDS.district : SCHOOL_META_FIELDS[key];
+      const selected = select.value;
+      const values = Array.from(new Set(
+        geoRecords
+          .filter(function(record) { return recordMatchesHigherFilters(record, key); })
+          .map(function(record) { return getCsvValue(record, aliases, ""); })
+          .filter(function(value) { return !isBlankCsvValue(value); })
+      )).sort(function(a, b) { return a.localeCompare(b); });
+
+      select.innerHTML = '<option value="">All ' + GEO_FILTER_LABELS[key] + '</option>' +
+        values.map(function(value) {
+          return '<option value="' + safeText(value) + '">' + safeText(value) + '</option>';
+        }).join("");
+
+      if (values.includes(selected)) {
+        select.value = selected;
+      }
+    }
+
+    function refreshGeoSelects(changedKey) {
+      const changedIndex = GEO_FILTER_ORDER.indexOf(changedKey);
+
+      GEO_FILTER_ORDER.forEach(function(key, index) {
+        if (index > changedIndex) {
+          const select = getGeoSelect(key);
+          if (select) select.value = "";
+        }
+      });
+
+      GEO_FILTER_ORDER.forEach(function(key, index) {
+        if (index > changedIndex) populateGeoSelect(key);
+      });
+    }
+
+    function resetGeoFilters() {
+      GEO_FILTER_ORDER.forEach(function(key) {
+        const select = getGeoSelect(key);
+        if (select) select.value = "";
+      });
+
+      GEO_FILTER_ORDER.forEach(populateGeoSelect);
+      tablePageIndex = 0;
+      renderActiveData();
+    }
+
+    async function setupGeoFilterControls() {
+      try {
+        await loadGeoFilterRecords();
+        GEO_FILTER_ORDER.forEach(populateGeoSelect);
+      } catch (error) {
+        console.warn(error);
+      }
+
+      GEO_FILTER_ORDER.forEach(function(key) {
+        const select = getGeoSelect(key);
+        if (!select) return;
+
+        select.addEventListener("change", function() {
+          refreshGeoSelects(key);
+          tablePageIndex = 0;
+          renderActiveData();
+        });
+      });
+
+      const resetButton = document.querySelector(".reset-pill");
+      if (resetButton) {
+        resetButton.addEventListener("click", resetGeoFilters);
+      }
+    }
+
+    function setupTableControls() {
+      // Column filters and sorting are attached after each table render.
+    }
+
+    function renderActiveData() {
+      const view = views[activeTabKey];
+      if (!view) return;
+
+      renderKpis(view);
+      renderTable(view);
+      renderMapMarkers(view);
+
+      if (map) {
+        setTimeout(function() {
+          map.invalidateSize();
+        }, 80);
+      }
+    }
+
+    const views = {
+      teaching: {
+        heading: "Teaching Deployment Overview",
+        summary: "Teaching Deployment Summary",
+        metricOneLabel: "Regional Teacher Need",
+        metricOneValue: "1,248",
+        metricTwoLabel: "Division Teacher Need",
+        metricTwoValue: "86",
+        kpis: [
+          ["--", "RO Filling-up Rate", "Average from stride_school_unique.csv"],
+          ["--", "SDO Filling-up Rate", "Average from stride_school_unique.csv"]
+        ],
+        tableTitle: "Teaching Deployment School Data List",
+        mapTitle: "Teaching Deployment Mapping",
+        columns: ["School Name", "ES Excess", "ES Shortage", "JHS Excess", "JHS Shortage", "SHS Excess", "SHS Shortage", "Total Excess", "Total Shortage", "Total Teachers"],
+        rows: [
+          ["Alaminos Central School", "0", "0", "0", "5", "0", "0", "0", "5", "52"],
+          ["Alos ES", "0", "0", "0", "0", "0", "0", "0", "0", "19"],
+          ["Amandiego ES", "0", "0", "0", "0", "0", "0", "0", "0", "12"],
+          ["Amangbangan ES", "0", "0", "0", "0", "0", "0", "0", "0", "8"],
+          ["Balangobong ES", "0", "0", "0", "4", "0", "0", "0", "4", "7"],
+          ["Balayang ES", "0", "0", "0", "0", "0", "0", "0", "0", "8"],
+          ["Baleyadaan ES", "0", "0", "0", "0", "0", "0", "0", "0", "10"],
+          ["Bisocol ES", "0", "0", "0", "0", "0", "0", "0", "0", "11"],
+          ["Bolaney ES", "0", "0", "0", "0", "0", "0", "0", "0", "8"],
+          ["Bued ES", "0", "0", "0", "0", "0", "0", "0", "0", "13"]
+        ]
+      },
+      nonTeaching: {
+        heading: "Non-teaching Deployment Overview",
+        summary: "Non-teaching Deployment Summary",
+        metricOneLabel: "Regional Non-teaching Need",
+        metricOneValue: "642",
+        metricTwoLabel: "Division Non-teaching Need",
+        metricTwoValue: "39",
+        kpis: [
+          ["932", "Reg Clustered AO II"],
+          ["1,564", "Reg Dedicated AO II"],
+          ["14", "Div Clustered AO II"],
+          ["26", "Div Dedicated AO II"]
+        ],
+        tableTitle: "Non-teaching Deployment School Data List",
+        mapTitle: "Non-teaching Deployment Mapping",
+        columns: ["School Name", "AO II Deployment", "PDO I Deployment"],
+        rows: [
+          ["Alaminos Central School", "Dedicated", "Without PDO I"],
+          ["Alos ES", "Dedicated", "Without PDO I"],
+          ["Amandiego ES", "Dedicated", "Without PDO I"],
+          ["Amangbangan ES", "Dedicated", "Without PDO I"],
+          ["Balangobong ES", "Dedicated", "Without PDO I"],
+          ["Balayang ES", "Dedicated", "Without PDO I"],
+          ["Baleyadaan ES", "Dedicated", "Without PDO I"],
+          ["Bisocol ES", "Dedicated", "Without PDO I"],
+          ["Bolaney ES", "Dedicated", "Without PDO I"],
+          ["Bued ES", "Clustered", "Without PDO I"]
+        ]
+      },
+      classrooms: {
+        heading: "Classrooms Overview",
+        summary: "Classrooms Summary",
+        metricOneLabel: "Regional Classroom Shortage",
+        metricOneValue: "3,050",
+        metricTwoLabel: "Division Classroom Shortage",
+        metricTwoValue: "61",
+        kpis: [
+          ["3,050", "Regional Classroom Shortage"],
+          ["61", "Division Classroom Shortage"]
+        ],
+        tableTitle: "Classroom School Data List",
+        mapTitle: "Classroom Shortage Mapping",
+        columns: ["School", "Total Enrolment", "Classroom Inventory", "Estimated Classrooms", "Buildable"],
+        rows: [
+          ["Alaminos Central School", "1,907", "52", "5", "Yes"],
+          ["Alos ES", "367", "19", "0", "No"],
+          ["Amandiego ES", "278", "12", "0", "No"],
+          ["Amangbangan ES", "188", "8", "0", "No"],
+          ["Balangobong ES", "277", "7", "4", "Yes"],
+          ["Balayang ES", "197", "8", "0", "No"],
+          ["Baleyadaan ES", "229", "10", "0", "No"],
+          ["Bisocol ES", "204", "11", "0", "No"],
+          ["Bolaney ES", "184", "8", "0", "No"],
+          ["Bued ES", "332", "13", "0", "No"]
+        ]
+      },
+      congestion: {
+        heading: "Congestion Overview",
+        summary: "Congestion Summary",
+        metricOneLabel: "Regional Congested Schools",
+        metricOneValue: "418",
+        metricTwoLabel: "Division Congested Schools",
+        metricTwoValue: "12",
+        kpis: [],
+        tableTitle: "Congestion School Data List",
+        mapTitle: "Congestion Mapping",
+        columns: ["School Name", "Region", "Division", "Total Enrolment", "Total Classrooms", "Congestion Ratio"],
+        rows: [
+          ["Alaminos Central School", "Region I", "Alaminos City", "1,705", "53", "0.728"],
+          ["Alos ES", "Region I", "Alaminos City", "320", "17", "0.251"],
+          ["Amandiego ES", "Region I", "Alaminos City", "254", "12", "0.350"],
+          ["Amangbangan ES", "Region I", "Alaminos City", "169", "10", "0.256"],
+          ["Balangobong ES", "Region I", "Alaminos City", "253", "8", "0.696"],
+          ["Balayang ES", "Region I", "Alaminos City", "206", "8", "0.445"],
+          ["Baleyadaan ES", "Region I", "Alaminos City", "214", "8", "0.537"],
+          ["Bisocol ES", "Region I", "Alaminos City", "186", "10", "0.269"],
+          ["Bolaney ES", "Region I", "Alaminos City", "177", "8", "0.312"],
+          ["Bued ES", "Region I", "Alaminos City", "344", "13", "0.533"]
+        ]
+      },
+      industries: {
+        heading: "Industries (SHS) Overview",
+        summary: "Industries Alignment Summary",
+        metricOneLabel: "Regional SHS Industry Gaps",
+        metricOneValue: "227",
+        metricTwoLabel: "Division SHS Industry Gaps",
+        metricTwoValue: "14",
+        kpis: [
+          ["--", "Total SHS Count"],
+          ["--", "Total Industry Partners"]
+        ],
+        tableTitle: "SHS Industries School Data List",
+        mapTitle: "SHS Industries Mapping",
+        columns: ["School Name", "Total Enrolment"],
+        rows: [
+          ["Alaminos Central School", "34.8490566"],
+          ["Alos ES", "19.64705882"],
+          ["Amandiego ES", "22.58333333"],
+          ["Amangbangan ES", "19.8"],
+          ["Balangobong ES", "33.375"],
+          ["Balayang ES", "25.25"],
+          ["Baleyadaan ES", "27.875"],
+          ["Bisocol ES", "20.2"],
+          ["Bolaney ES", "21.5"],
+          ["Bued ES", "27.76923077"]
+        ]
+      },
+      facilities: {
+        heading: "Facilities Overview",
+        summary: "Facilities Summary",
+        metricOneLabel: "Regional Facilities Need",
+        metricOneValue: "1,106",
+        metricTwoLabel: "Division Facilities Need",
+        metricTwoValue: "44",
+        kpis: [],
+        tableTitle: "Facilities School Data List",
+        mapTitle: "Facilities Mapping",
+        columns: ["School", "Facility Type", "Funding Year", "Allocation"],
+        rows: [
+          ["Victoria ES", "New Construction", "2028", "₱6,000,000.00"],
+          ["Telbang ES", "New Construction", "2025", "₱14,000,000.00"],
+          ["Telbang National High School", "New Construction", "2028", "₱6,000,000.00"],
+          ["Pandan ES", "New Construction", "2027", "₱6,000,000.00"],
+          ["Sabangan ES", "New Construction", "2028", "₱6,000,000.00"],
+          ["Bued ES", "New Construction", "2026", "₱1,000,000.00"],
+          ["Maliga ES", "New Construction", "2024", "₱5,500,000.00"],
+          ["Maliga ES", "New Construction", "2027", "₱6,000,000.00"],
+          ["Balangobong ES", "New Construction", "2023", "₱5,750,000.00"],
+          ["Balangobong ES", "New Construction", "2025", "₱14,000,000.00"]
+        ]
+      },
+      lastMile: {
+        heading: "Last Mile Schools Overview",
+        summary: "Last Mile Schools Summary",
+        metricOneLabel: "Regional Last Mile Schools",
+        metricOneValue: "312",
+        metricTwoLabel: "Division Last Mile Schools",
+        metricTwoValue: "7",
+        kpis: [
+          ["--", "Total LMS by Region"],
+          ["--", "Total LMS by Division"]
+        ],
+        tableTitle: "Last Mile School Data List",
+        mapTitle: "Last Mile School Mapping",
+        columns: ["School Name", "Total Enrolment", "Classrooms Inventory", "Classroom Shortage", "Buildable"],
+        rows: [
+          ["Victoria ES", "0", "0", "0", "No"],
+          ["Telbang ES", "0", "0", "0", "No"],
+          ["Telbang National High School", "0", "0", "0", "No"],
+          ["Pandan ES", "0", "0", "0", "No"],
+          ["Sabangan ES", "0", "0", "0", "No"],
+          ["Bued ES", "0", "0", "0", "No"],
+          ["Maliga ES", "0", "0", "0", "No"],
+          ["Maliga ES", "0", "0", "0", "No"],
+          ["Balangobong ES", "0", "0", "0", "No"],
+          ["Balangobong ES", "0", "0", "0", "No"]
+        ]
+      }
+    };
+
+    const MAP_TILE_MODES = {
+      road: {
+        label: "Road",
+        url: "https://" + "{s}" + ".tile.openstreetmap.org/" + "{z}" + "/" + "{x}" + "/" + "{y}" + ".png",
+        attribution: "&copy; OpenStreetMap contributors",
+        maxZoom: 19
+      },
+      terrain: {
+        label: "Terrain",
+        url: "https://" + "{s}" + ".tile.opentopomap.org/" + "{z}" + "/" + "{x}" + "/" + "{y}" + ".png",
+        attribution: "Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap",
+        maxZoom: 17
+      },
+      satellite: {
+        label: "Satellite",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/" + "{z}" + "/" + "{y}" + "/" + "{x}",
+        attribution: "Tiles &copy; Esri",
+        maxZoom: 19
+      },
+      light: {
+        label: "Light",
+        url: "https://" + "{s}" + ".basemaps.cartocdn.com/light_all/" + "{z}" + "/" + "{x}" + "/" + "{y}" + ".png",
+        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+        maxZoom: 19
+      }
+    };
+
+    let map;
+    let activeBaseLayer;
+    let activeMapMode = "road";
+    let markerClusterLayer;
+    let markerByRowKey = {};
+    let activeFlySequence = 0;
+let currentSchoolProfileContext = null;
+
+    function safeText(value) {
+      return String(value).replace(/[&<>"']/g, function(character) {
+        return {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        }[character];
+      });
+    }
+
+    function getRowKey(schoolName, index) {
+      return String(schoolName).toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + index;
+    }
+
+    function getSchoolMeta(schoolName, index) {
+      const knownSchools = {
+        "Alaminos Central School": { region: "Region I", division: "Alaminos City", schoolId: "101001" },
+        "Alos ES": { region: "Region I", division: "Alaminos City", schoolId: "101002" },
+        "Amandiego ES": { region: "Region I", division: "Alaminos City", schoolId: "101003" },
+        "Amangbangan ES": { region: "Region I", division: "Alaminos City", schoolId: "101004" },
+        "Balangobong ES": { region: "Region I", division: "Alaminos City", schoolId: "101005" },
+        "Balayang ES": { region: "Region I", division: "Alaminos City", schoolId: "101006" },
+        "Baleyadaan ES": { region: "Region I", division: "Alaminos City", schoolId: "101007" },
+        "Bisocol ES": { region: "Region I", division: "Alaminos City", schoolId: "101008" },
+        "Bolaney ES": { region: "Region I", division: "Alaminos City", schoolId: "101009" },
+        "Bued ES": { region: "Region I", division: "Alaminos City", schoolId: "101010" },
+        "Victoria ES": { region: "Region I", division: "Alaminos City", schoolId: "101011" },
+        "Telbang ES": { region: "Region I", division: "Alaminos City", schoolId: "101012" },
+        "Telbang National High School": { region: "Region I", division: "Alaminos City", schoolId: "101013" },
+        "Pandan ES": { region: "Region I", division: "Alaminos City", schoolId: "101014" },
+        "Sabangan ES": { region: "Region I", division: "Alaminos City", schoolId: "101015" },
+        "Maliga ES": { region: "Region I", division: "Alaminos City", schoolId: "101016" }
+      };
+
+      return knownSchools[schoolName] || {
+        region: "Region I",
+        division: "Alaminos City",
+        schoolId: "101" + String(index + 1).padStart(3, "0")
+      };
+    }
+
+    function getDisplayColumns(view) {
+      const columns = view.columns.slice();
+
+      if (view.schoolBased === false) {
+        return columns;
+      }
+
+      const schoolColumn = columns.indexOf("School Name") > -1 ? "School Name" : "School";
+      const leadingColumns = ["Region", "Division", "School ID", schoolColumn];
+      const remainingColumns = columns.filter(function(column) {
+        return !leadingColumns.includes(column) && column !== "School" && column !== "School Name";
+      });
+
+      return leadingColumns.concat(remainingColumns);
+    }
+
+    function getDisplayRow(view, rowIndex) {
+      const columns = view.columns.slice();
+      const row = view.rows[rowIndex];
+
+      if (view.schoolBased === false) {
+        return row;
+      }
+
+      const fallbackMeta = getSchoolMeta(row[0], rowIndex);
+      const csvMeta = view.metaRows && view.metaRows[rowIndex] ? view.metaRows[rowIndex] : {};
+      const schoolColumn = columns.indexOf("School Name") > -1 ? "School Name" : "School";
+      const rowData = {};
+      const meta = {
+        region: csvMeta.region || fallbackMeta.region,
+        division: csvMeta.division || fallbackMeta.division,
+        schoolId: csvMeta.schoolId || fallbackMeta.schoolId
+      };
+
+      columns.forEach(function(column, columnIndex) {
+        rowData[column] = row[columnIndex];
+      });
+
+      rowData.Region = rowData.Region || meta.region;
+      rowData.Division = rowData.Division || meta.division;
+      rowData["School ID"] = rowData["School ID"] || meta.schoolId;
+      rowData[schoolColumn] = rowData[schoolColumn] || rowData["School"] || rowData["School Name"] || row[0];
+
+      return getDisplayColumns(view).map(function(column) {
+        return rowData[column] || "";
+      });
+    }
+
+    function rowPassesGeoFilters(view, rowIndex) {
+      if (view.schoolBased === false) {
+        const selectedRegion = getGeoValue("region");
+        if (!selectedRegion) return true;
+
+        const regionColumn = view.columns.indexOf("Region");
+        return regionColumn === -1 || view.rows[rowIndex][regionColumn] === selectedRegion;
+      }
+
+      const row = view.rows[rowIndex];
+      const fallbackMeta = getSchoolMeta(row[0], rowIndex);
+      const csvMeta = view.metaRows && view.metaRows[rowIndex] ? view.metaRows[rowIndex] : {};
+      const meta = {
+        region: csvMeta.region || fallbackMeta.region,
+        division: csvMeta.division || fallbackMeta.division,
+        municipality: csvMeta.municipality || "",
+        legislativeDistrict: csvMeta.legislativeDistrict || "",
+        district: csvMeta.district || ""
+      };
+
+      return GEO_FILTER_ORDER.every(function(key) {
+        const selected = getGeoValue(key);
+        return !selected || meta[key] === selected;
+      });
+    }
+
+    function parseSortNumber(value) {
+      const cleaned = String(value || "").replace(/[%₱,]/g, "").trim();
+      const parsed = Number(cleaned);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function getVisibleRowIndexes(view) {
+      const displayColumns = getDisplayColumns(view);
+      const sortIndex = displayColumns.indexOf(tableSortColumn);
+      const indexes = view.rows.map(function(_, index) { return index; }).filter(function(rowIndex) {
+        if (!rowPassesGeoFilters(view, rowIndex)) return false;
+
+        const displayRow = getDisplayRow(view, rowIndex);
+
+        return displayColumns.every(function(column, columnIndex) {
+          const filterText = (columnFilters[column] || "").trim().toLowerCase();
+          if (!filterText) return true;
+
+          return String(displayRow[columnIndex] || "").toLowerCase().includes(filterText);
+        });
+      });
+
+      if (sortIndex > -1) {
+        indexes.sort(function(firstIndex, secondIndex) {
+          const firstValue = getDisplayRow(view, firstIndex)[sortIndex] || "";
+          const secondValue = getDisplayRow(view, secondIndex)[sortIndex] || "";
+          const firstNumber = parseSortNumber(firstValue);
+          const secondNumber = parseSortNumber(secondValue);
+          let result;
+
+          if (firstNumber !== null && secondNumber !== null) {
+            result = firstNumber - secondNumber;
+          } else {
+            result = String(firstValue).localeCompare(String(secondValue), undefined, { numeric: true, sensitivity: "base" });
+          }
+
+          return tableSortDirection === "asc" ? result : result * -1;
+        });
+      }
+
+      return indexes;
+    }
+
+    function buildDisplayTable(view, rowIndexes, start, limit) {
+      const indexes = rowIndexes || view.rows.map(function(_, index) { return index; });
+      const startIndex = typeof start === "number" ? start : 0;
+      const pageIndexes = typeof limit === "number" ? indexes.slice(startIndex, startIndex + limit) : indexes;
+
+      return {
+        columns: getDisplayColumns(view),
+        rows: pageIndexes.map(function(rowIndex) { return getDisplayRow(view, rowIndex); }),
+        originalIndexes: pageIndexes
+      };
+    }
+
+    function setTableSort(column) {
+      if (tableSortColumn === column) {
+        tableSortDirection = tableSortDirection === "asc" ? "desc" : "asc";
+      } else {
+        tableSortColumn = column;
+        tableSortDirection = "asc";
+      }
+
+      tablePageIndex = 0;
+      renderActiveData();
+    }
+
+    function bindColumnFilter(input) {
+      input.addEventListener("click", function(event) {
+        event.stopPropagation();
+      });
+
+      input.addEventListener("keydown", function(event) {
+        event.stopPropagation();
+      });
+
+      input.addEventListener("input", function(event) {
+        const column = event.target.dataset.column;
+        const value = event.target.value;
+
+        columnFilters[column] = value;
+        activeColumnFilter = {
+          column: column,
+          start: event.target.selectionStart,
+          end: event.target.selectionEnd
+        };
+
+        clearTimeout(columnFilterTimers[column]);
+        columnFilterTimers[column] = setTimeout(function() {
+          tablePageIndex = 0;
+          renderActiveData();
+        }, 260);
+      });
+    }
+
+    function restoreColumnFilterFocus() {
+      if (!activeColumnFilter) return;
+
+      const selector = '.column-filter-input[data-column="' + CSS.escape(activeColumnFilter.column) + '"]';
+      const input = document.querySelector(selector);
+
+      if (!input) return;
+
+      input.focus({ preventScroll: true });
+
+      const length = input.value.length;
+      const start = Math.min(activeColumnFilter.start === null ? length : activeColumnFilter.start, length);
+      const end = Math.min(activeColumnFilter.end === null ? start : activeColumnFilter.end, length);
+
+      input.setSelectionRange(start, end);
+    }
+
+    function getRowName(view, row, rowIndex) {
+      if (view.pointRows && view.pointRows[rowIndex] && view.pointRows[rowIndex].name) {
+        return view.pointRows[rowIndex].name;
+      }
+
+      const nameColumnIndex = view.columns.indexOf("School Name") > -1 ? view.columns.indexOf("School Name") :
+        view.columns.indexOf("School") > -1 ? view.columns.indexOf("School") :
+        view.columns.indexOf("Company") > -1 ? view.columns.indexOf("Company") : 0;
+
+      return row[nameColumnIndex] || "Record " + (rowIndex + 1);
+    }
+
+    function renderTable(view) {
+      const displayColumns = getDisplayColumns(view);
+      if (tableSortColumn && !displayColumns.includes(tableSortColumn)) {
+        tableSortColumn = "";
+      }
+
+      Object.keys(columnFilters).forEach(function(column) {
+        if (!displayColumns.includes(column)) {
+          delete columnFilters[column];
+        }
+      });
+
+      const visibleRowIndexes = getVisibleRowIndexes(view);
+      const totalRows = visibleRowIndexes.length;
+      const totalPages = Math.max(1, Math.ceil(totalRows / TABLE_PAGE_SIZE));
+      tablePageIndex = Math.min(Math.max(tablePageIndex, 0), totalPages - 1);
+
+      const startRow = tablePageIndex * TABLE_PAGE_SIZE;
+      const endRow = Math.min(startRow + TABLE_PAGE_SIZE, totalRows);
+      const displayTable = buildDisplayTable(view, visibleRowIndexes, startRow, TABLE_PAGE_SIZE);
+      const headerHtml = displayTable.columns.map(function(column) {
+        const activeSort = column === tableSortColumn ? " " + (tableSortDirection === "asc" ? "▲" : "▼") : "";
+        const filterValue = columnFilters[column] || "";
+        return '<th><button type="button" class="column-sort-button" data-column="' + safeText(column) + '">' + safeText(column + activeSort) + '</button><input class="column-filter-input" data-column="' + safeText(column) + '" type="search" value="' + safeText(filterValue) + '" placeholder="Filter..." autocomplete="off" /></th>';
+      }).join("");
+
+      const rowsHtml = displayTable.rows.map(function(row, rowIndex) {
+        const originalIndex = displayTable.originalIndexes[rowIndex];
+        const rowKey = getRowKey(getRowName(view, view.rows[originalIndex], originalIndex), originalIndex);
+        const cellsHtml = row.map(function(cell) {
+          return "<td>" + safeText(cell) + "</td>";
+        }).join("");
+        return '<tr data-row-key="' + safeText(rowKey) + '">' + cellsHtml + "</tr>";
+      }).join("");
+
+      const table = document.getElementById("dataTable");
+      table.innerHTML = "<thead><tr>" + headerHtml + "</tr></thead><tbody>" + rowsHtml + "</tbody>";
+
+      table.querySelectorAll(".column-sort-button").forEach(function(button) {
+        button.addEventListener("click", function() {
+          setTableSort(button.dataset.column);
+        });
+      });
+
+      table.querySelectorAll(".column-filter-input").forEach(bindColumnFilter);
+      restoreColumnFilterFocus();
+
+      table.querySelector("tbody").addEventListener("click", function(event) {
+        const row = event.target.closest("tr");
+        if (!row) return;
+
+        zoomToRow(row.dataset.rowKey);
+        table.querySelectorAll("tbody tr").forEach(function(item) {
+          item.classList.toggle("active-row", item === row);
+        });
+      });
+
+      document.getElementById("pageCount").textContent =
+        totalRows ? (startRow + 1) + "-" + endRow + " of " + totalRows : "0 of 0";
+
+      document.getElementById("tableFirst").disabled = tablePageIndex === 0;
+      document.getElementById("tablePrev").disabled = tablePageIndex === 0;
+      document.getElementById("tableNext").disabled = tablePageIndex >= totalPages - 1;
+      document.getElementById("tableLast").disabled = tablePageIndex >= totalPages - 1;
+    }
+
+    function uniqueRecordPassesGeoFilters(record) {
+      return GEO_FILTER_ORDER.every(function(key) {
+        const selected = getGeoValue(key);
+        if (!selected) return true;
+
+        const aliases = key === "district" ? SCHOOL_META_FIELDS.district : SCHOOL_META_FIELDS[key];
+        return getCsvValue(record, aliases, "") === selected;
+      });
+    }
+
+    function formatRate(value) {
+      if (value === null || value === undefined || !Number.isFinite(value)) {
+        return "--";
+      }
+
+      const normalized = value <= 1 ? value * 100 : value;
+      const rounded = Math.round(normalized * 10) / 10;
+      return (Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)) + "%";
+    }
+
+    function averageRate(records, aliases) {
+      const values = records.map(function(record) {
+        return toNumber(getCsvValue(record, aliases, ""));
+      }).filter(function(value) {
+        return value !== null && Number.isFinite(value);
+      });
+
+      if (!values.length) return "--";
+
+      const total = values.reduce(function(sum, value) {
+        return sum + value;
+      }, 0);
+
+      return formatRate(total / values.length);
+    }
+
+    function getUniqueSchoolRecords() {
+      return geoRecords.length ? geoRecords : (csvCache[GEO_FILTER_FILE] || []);
+    }
+
+    function recordMatchesSelectedRegion(record) {
+      const selectedRegion = getGeoValue("region");
+      if (!selectedRegion) return true;
+
+      return getCsvValue(record, SCHOOL_META_FIELDS.region, "") === selectedRegion;
+    }
+
+    function recordMatchesSelectedDivision(record) {
+      const selectedDivision = getGeoValue("division");
+
+      if (selectedDivision) {
+        return getCsvValue(record, SCHOOL_META_FIELDS.division, "") === selectedDivision;
+      }
+
+      return recordMatchesSelectedRegion(record);
+    }
+
+    function countClusteringStatus(records, statusKeyword) {
+      const keyword = String(statusKeyword || "").toLowerCase();
+
+      return records.filter(function(record) {
+        return String(getCsvValue(record, ["clustering_status", "clustering status"], "")).toLowerCase().includes(keyword);
+      }).length.toLocaleString();
+    }
+
+    function sumCsvNumber(records, aliases) {
+      const total = records.reduce(function(sum, record) {
+        const value = toNumber(getCsvValue(record, aliases, ""));
+        return value === null ? sum : sum + value;
+      }, 0);
+
+      return Math.round(total).toLocaleString();
+    }
+
+    function getKpisForView(view) {
+      if (activeTabKey === "teaching") {
+        const sourceRecords = getUniqueSchoolRecords();
+        const filteredRecords = sourceRecords.filter(uniqueRecordPassesGeoFilters);
+
+        return [
+          [averageRate(filteredRecords, ["ro_filling_up", "ro filling up"]), "RO Filling-up Rate", "Average from stride_school_unique.csv"],
+          [averageRate(filteredRecords, ["sdo_filling_up", "sdo filling up"]), "SDO Filling-up Rate", "Average from stride_school_unique.csv"]
+        ];
+      }
+
+      if (activeTabKey === "nonTeaching") {
+        const sourceRecords = getUniqueSchoolRecords();
+        const regionalRecords = sourceRecords.filter(recordMatchesSelectedRegion);
+        const divisionRecords = sourceRecords.filter(recordMatchesSelectedDivision);
+
+        return [
+          [countClusteringStatus(regionalRecords, "clustered"), "Reg Clustered AO II", "Count of clustered schools in selected region"],
+          [countClusteringStatus(regionalRecords, "dedicated"), "Reg Dedicated AO II", "Count of dedicated schools in selected region"],
+          [countClusteringStatus(divisionRecords, "clustered"), "Div Clustered AO II", "Count of clustered schools in selected division"],
+          [countClusteringStatus(divisionRecords, "dedicated"), "Div Dedicated AO II", "Count of dedicated schools in selected division"]
+        ];
+      }
+
+      if (activeTabKey === "classrooms") {
+        const sourceRecords = getUniqueSchoolRecords();
+        const regionalRecords = sourceRecords.filter(recordMatchesSelectedRegion);
+        const divisionRecords = sourceRecords.filter(recordMatchesSelectedDivision);
+        const shortageAliases = ["estimated_classroom_shortage", "estimated classroom shortage", "classroom shortage"];
+
+        return [
+          [sumCsvNumber(regionalRecords, shortageAliases), "Regional Classroom Shortage", "Sum of estimated classroom shortage in selected region"],
+          [sumCsvNumber(divisionRecords, shortageAliases), "Division Classroom Shortage", "Sum of estimated classroom shortage in selected division"]
+        ];
+      }
+
+      return view.kpis || [];
+    }
+
+    function renderKpis(view) {
+      const mainPanel = document.querySelector(".main");
+      const kpiSection = document.querySelector(".kpis");
+      const kpiCards = Array.from(document.querySelectorAll(".kpi"));
+      const kpiSlots = [
+        ["kpiOneValue", "kpiOneLabel", "kpiOneSubtitle"],
+        ["kpiTwoValue", "kpiTwoLabel", "kpiTwoSubtitle"],
+        ["kpiThreeValue", "kpiThreeLabel", "kpiThreeSubtitle"],
+        ["kpiFourValue", "kpiFourLabel", "kpiFourSubtitle"],
+        ["kpiFiveValue", "kpiFiveLabel", "kpiFiveSubtitle"],
+        ["kpiSixValue", "kpiSixLabel", "kpiSixSubtitle"],
+        ["kpiSevenValue", "kpiSevenLabel", "kpiSevenSubtitle"],
+        ["kpiEightValue", "kpiEightLabel", "kpiEightSubtitle"]
+      ];
+      const kpiItems = getKpisForView(view);
+      const visibleKpiCount = Math.min(kpiItems.length, kpiSlots.length);
+
+      mainPanel.classList.toggle("no-kpis", !kpiItems.length);
+      kpiSection.style.display = kpiItems.length ? "grid" : "none";
+      kpiSection.className = "kpis";
+      if (visibleKpiCount) {
+        kpiSection.classList.add("kpi-count-" + visibleKpiCount);
+      }
+
+      kpiSlots.forEach(function(slot, index) {
+        const item = kpiItems[index];
+
+        if (item && kpiCards[index]) {
+          kpiCards[index].style.display = "block";
+          document.getElementById(slot[0]).textContent = item[0];
+          document.getElementById(slot[1]).textContent = item[1];
+          document.getElementById(slot[2]).textContent = item[2] || (index === 0 ? "sum of Number in view" : "Status · total Number");
+        } else {
+          if (kpiCards[index]) kpiCards[index].style.display = "none";
+          document.getElementById(slot[0]).textContent = "";
+          document.getElementById(slot[1]).textContent = "";
+          document.getElementById(slot[2]).textContent = "";
+        }
+      });
+    }
+
+    function getPointForRow(view, row, rowIndex) {
+      const rowName = getRowName(view, row, rowIndex);
+      const csvPoint = view.pointRows && view.pointRows[rowIndex] ? view.pointRows[rowIndex] : null;
+
+      if (csvPoint && Number.isFinite(csvPoint.lat) && Number.isFinite(csvPoint.lng)) {
+        return {
+          name: csvPoint.name || rowName,
+          lat: csvPoint.lat,
+          lng: csvPoint.lng,
+          value: rowIndex + 1,
+          critical: rowIndex === 0
+        };
+      }
+
+      const exactPoint = schoolPoints.find(function(point) {
+        return point.name === rowName;
+      });
+
+      if (exactPoint) {
+        return exactPoint;
+      }
+
+      const angle = rowIndex * 1.73;
+      return {
+        name: rowName,
+        lat: 16.14 + Math.sin(angle) * 0.075,
+        lng: 119.99 + Math.cos(angle) * 0.075,
+        value: rowIndex + 1,
+        critical: rowIndex === 0
+      };
+    }
+
+    function formatHoverKpiValue(value) {
+      return isBlankCsvValue(value) ? "--" : value;
+    }
+
+    function getHoverKpisForRow(view, row, rowIndex) {
+      const displayColumns = getDisplayColumns(view);
+      const displayRow = getDisplayRow(view, rowIndex);
+      const headerColumns = ["Region", "Division", "School ID", "School Name", "School", "Municipality", "Legislative District", "School District"];
+
+      return displayColumns.map(function(column, index) {
+        return [column, formatHoverKpiValue(displayRow[index])];
+      }).filter(function(item) {
+        return !headerColumns.includes(item[0]) && !isBlankCsvValue(item[1]);
+      });
+    }
+
+    function buildHoverKpiHtml(view, row, rowIndex) {
+      const kpis = getHoverKpisForRow(view, row, rowIndex).filter(function(item) {
+        return item && !isBlankCsvValue(item[1]);
+      });
+
+      if (!kpis.length) return "";
+
+      const useTwoColumns = kpis.length > 5;
+      const rowCount = useTwoColumns ? Math.ceil(kpis.length / 2) : kpis.length;
+      const firstColumn = kpis.slice(0, rowCount);
+      const secondColumn = useTwoColumns ? kpis.slice(rowCount) : [];
+      const rows = firstColumn.map(function(item, index) {
+        const pairedItem = secondColumn[index];
+
+        if (!useTwoColumns) {
+          return '<tr><th scope="row">' + safeText(item[0]) + '</th><td>' + safeText(item[1]) + '</td></tr>';
+        }
+
+        return '<tr><th scope="row">' + safeText(item[0]) + '</th><td>' + safeText(item[1]) + '</td>' +
+          (pairedItem ? '<th scope="row">' + safeText(pairedItem[0]) + '</th><td>' + safeText(pairedItem[1]) + '</td>' : '<th class="empty-cell"></th><td class="empty-cell"></td>') +
+          '</tr>';
+      }).join("");
+
+      return '<div class="map-kpi-table-wrap"><table class="map-kpi-table' + (useTwoColumns ? ' two-column' : '') + '"><tbody>' + rows + '</tbody></table></div>';
+    }
+
+    function buildMapCardHtml(view, row, rowIndex, point, limit, options) {
+      const details = view.popupRows && view.popupRows[rowIndex] ? view.popupRows[rowIndex] : [];
+      const status = markerStatusForRow(view, row, rowIndex);
+
+      function detailValue(label) {
+        const item = details.find(function(detail) {
+          return String(detail[0] || "").toLowerCase() === String(label || "").toLowerCase();
+        });
+
+        return item ? item[1] : "";
+      }
+
+      const schoolId = detailValue("School ID");
+      const locationParts = [
+        detailValue("Region"),
+        detailValue("Division"),
+        detailValue("Municipality"),
+        detailValue("Legislative District"),
+        detailValue("School District")
+      ].filter(function(value) {
+        return !isBlankCsvValue(value);
+      });
+      const showKpiOnly = options && options.includeKpis;
+      const visibleDetails = showKpiOnly ? [] : details.slice(0, limit || 10);
+      const rowsHtml = visibleDetails.map(function(item) {
+        return '<div class="map-card-row"><div class="map-card-label">' + safeText(item[0]) + '</div><div class="map-card-value">' + safeText(item[1]) + '</div></div>';
+      }).join("");
+      const kpiHtml = showKpiOnly ? buildHoverKpiHtml(view, row, rowIndex) : "";
+      const eyebrowHtml = schoolId ? '<div class="map-card-eyebrow">School ID ' + safeText(schoolId) + '</div>' : "";
+      const locationHtml = locationParts.length ? '<div class="map-card-location">' + safeText(locationParts.join(" | ")) + '</div>' : "";
+      const bodyHtml = rowsHtml ? '<div class="map-card-body">' + rowsHtml + '</div>' : "";
+
+      return '<div class="map-card">' +
+        '<div class="map-card-header">' +
+          '<div class="map-card-status"><span class="map-card-status-dot"></span>' + safeText(status.label) + '</div>' +
+          eyebrowHtml +
+          '<div class="map-card-title">' + safeText(point.name) + '</div>' +
+          locationHtml +
+        '</div>' +
+        kpiHtml +
+        bodyHtml +
+      '</div>';
+    }
+
+    function buildPopupHtml(view, row, rowIndex, point) {
+      return buildMapCardHtml(view, row, rowIndex, point, 12);
+    }
+
+    function buildHoverCardHtml(view, row, rowIndex, point) {
+      return buildMapCardHtml(view, row, rowIndex, point, 5, { includeKpis: true });
+    }
+
+    function formatCsvFieldLabel(label) {
+      const normalizedInput = normalizeCsvHeader(label);
+      const specializationPrefix = "specialization ";
+      let cleanedLabel = String(label || "")
+        .replace(/[_\-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (normalizedInput.indexOf(specializationPrefix) === 0) {
+        cleanedLabel = normalizedInput.replace(specializationPrefix, "");
+      }
+
+      return cleanedLabel
+        .split(" ")
+        .map(function(word) {
+          const lower = word.toLowerCase();
+          const acronyms = {
+            id: "ID",
+            beis: "BEIS",
+            gmis: "GMIS",
+            coc: "COC",
+            sbpi: "SBPI",
+            ro: "RO",
+            sdo: "SDO",
+            es: "ES",
+            jhs: "JHS",
+            shs: "SHS",
+            tle: "TLE",
+            ece: "ECE",
+            sped: "SPED",
+            mapeh: "MAPEH",
+            esp: "ESP",
+            ao: "AO",
+            pdo: "PDO",
+            iso: "ISO",
+            sha: "SHA",
+            tls: "TLS"
+          };
+
+          return acronyms[lower] || lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join(" ");
+    }
+
+    function detailSectionForLabel(label) {
+      const normalized = String(label || "").toLowerCase();
+
+      if (normalized.includes("company") || normalized.includes("sector") || normalized.includes("industry")) {
+        return "Industry Profile";
+      }
+
+      if (normalized.includes("region") || normalized.includes("division") || normalized.includes("district") || normalized.includes("municipality") || normalized.includes("province") || normalized.includes("barangay") || normalized.includes("street") || normalized.includes("address") || normalized.includes("latitude") || normalized.includes("longitude") || normalized.includes("coordinates")) {
+        return "Geography and Address";
+      }
+
+      if (normalized.includes("school id") || normalized.includes("school name") || normalized === "school" || normalized.includes("implementing unit") || normalized.includes("modified coc") || normalized.includes("school size") || normalized.includes("typology") || normalized.includes("ownership")) {
+        return "School Identity";
+      }
+
+      if (normalized.includes("enrol") || normalized.includes("enrollment") || normalized.includes("grade") || normalized.includes("level")) {
+        return "Enrollment and School Size";
+      }
+
+      if (normalized.includes("clustering") || normalized.includes("plantilla") || normalized.includes("outlier") || normalized.includes("ao ii") || normalized.includes("pdo i")) {
+        return "NTP Deployment Data";
+      }
+
+      if (normalized.includes("estimated classroom shortage") || normalized.includes("classroom") || normalized.includes("room") || normalized.includes("shifting") || normalized.includes("buildable") || normalized.includes("sbpi")) {
+        return "Classroom Inventory";
+      }
+
+      const teacherSpecializationLabels = [
+        "english",
+        "mathematics",
+        "science",
+        "biological sciences",
+        "physical sciences",
+        "general education",
+        "araling panlipunan",
+        "tle",
+        "no specialization",
+        "mapeh",
+        "filipino",
+        "esp",
+        "agriculture",
+        "ece",
+        "sped"
+      ];
+
+      if (normalized.includes("specialization") || teacherSpecializationLabels.includes(normalized)) {
+        return "Teacher Specialization";
+      }
+
+      if (normalized.includes("teacher") || normalized.includes("excess") || normalized.includes("shortage")) {
+        return "Teaching Deployment Data";
+      }
+
+      if (normalized.includes("electricity") || normalized.includes("water") || normalized.includes("facility")) {
+        return "Facilities and Utilities";
+      }
+
+      if (normalized.includes("travel") || normalized.includes("conflict") || normalized.includes("index") || normalized.includes("tls") || normalized.includes("sha") || normalized.includes("last mile")) {
+        return "Access and Last Mile Indicators";
+      }
+
+      return "Other Details";
+    }
+
+    function buildModalDetailHtml(view, row, rowIndex, point) {
+      const rawRecord = view.rawRows && view.rawRows[rowIndex] ? view.rawRows[rowIndex] : null;
+      const popupDetails = view.popupRows && view.popupRows[rowIndex] ? view.popupRows[rowIndex] : [];
+      const displayColumns = getDisplayColumns(view);
+      const displayRow = getDisplayRow(view, rowIndex);
+      const details = [];
+      const usedLabels = {};
+      const grouped = {};
+      const sectionOrder = [
+        "Enrollment and School Size",
+        "Teaching Deployment Data",
+        "Teacher Specialization",
+        "NTP Deployment Data",
+        "Classroom Inventory",
+        "Facilities and Utilities",
+        "Access and Last Mile Indicators",
+        "Industry Profile"
+      ];
+
+      function addModalDetail(label, value, options) {
+        const displayLabel = formatCsvFieldLabel(label);
+        const key = displayLabel.toLowerCase();
+
+        if (!displayLabel || usedLabels[key]) return;
+        if (key === "ro filling up" || key === "sdo filling up" || key === "ro filling up rate" || key === "sdo filling up rate") return;
+        if (!(options && options.allowBlank) && isBlankCsvValue(value)) return;
+
+        usedLabels[key] = true;
+        details.push([displayLabel, formatHoverKpiValue(value)]);
+      }
+
+      if (rawRecord) {
+        Object.keys(rawRecord).forEach(function(fieldName) {
+          addModalDetail(fieldName, rawRecord[fieldName], { allowBlank: true });
+        });
+      } else {
+        popupDetails.forEach(function(item) {
+          addModalDetail(item[0], item[1], { allowBlank: true });
+        });
+
+        displayColumns.forEach(function(column, index) {
+          addModalDetail(column, displayRow[index], { allowBlank: true });
+        });
+      }
+
+      details.forEach(function(item) {
+        const section = detailSectionForLabel(item[0]);
+        if (!grouped[section]) grouped[section] = [];
+        grouped[section].push(item);
+      });
+
+      const sectionsHtml = sectionOrder.filter(function(section) {
+        return grouped[section] && grouped[section].length;
+      }).map(function(section) {
+        let sectionItems = grouped[section];
+        let highlightStripHtml = "";
+
+        if (activeTabKey === "teaching" && section === "Teaching Deployment Data") {
+          const highlightLabels = ["total teachers", "total excess", "total shortage"];
+          const highlightItems = sectionItems.filter(function(item) {
+            return highlightLabels.includes(String(item[0] || "").toLowerCase());
+          });
+
+          sectionItems = sectionItems.filter(function(item) {
+            return !highlightLabels.includes(String(item[0] || "").toLowerCase());
+          });
+
+          if (highlightItems.length) {
+            highlightStripHtml = '<div class="modal-highlight-strip">' + highlightItems.map(function(item) {
+              return '<div class="modal-highlight-chip"><div class="map-card-label">' + safeText(item[0]) + '</div><div class="map-card-value">' + safeText(item[1]) + '</div></div>';
+            }).join("") + '</div>';
+          }
+        }
+
+        const bottomHighlightItems = sectionItems.filter(function(item) {
+          const normalizedLabel = String(item[0] || "").toLowerCase();
+          return normalizedLabel.includes("estimated classroom shortage");
+        });
+        sectionItems = sectionItems.filter(function(item) {
+          const normalizedLabel = String(item[0] || "").toLowerCase();
+          return !normalizedLabel.includes("estimated classroom shortage");
+        });
+
+        const rowsHtml = sectionItems.map(function(item) {
+          return '<div class="map-card-row"><div class="map-card-label">' + safeText(item[0]) + '</div><div class="map-card-value">' + safeText(item[1]) + '</div></div>';
+        }).join("");
+        const bottomHighlightHtml = bottomHighlightItems.map(function(item) {
+          return '<div class="map-card-row modal-highlight-row"><div class="map-card-label">' + safeText(item[0]) + '</div><div class="map-card-value">' + safeText(item[1]) + '</div></div>';
+        }).join("");
+
+        return '<section class="modal-section"><div class="modal-section-title">' + safeText(section) + '</div><div class="modal-section-body">' + rowsHtml + highlightStripHtml + bottomHighlightHtml + '</div></section>';
+      }).join("");
+
+      return '<div class="modal-section-grid">' + sectionsHtml + '</div>';
+    }
+
+    function getSchoolProfileContext(view, row, rowIndex, point) {
+      const details = view.popupRows && view.popupRows[rowIndex] ? view.popupRows[rowIndex] : [];
+      const status = markerStatusForRow(view, row, rowIndex);
+
+      function detailValue(label) {
+        const item = details.find(function(detail) {
+          return String(detail[0] || "").toLowerCase() === String(label || "").toLowerCase();
+        });
+
+        return item ? item[1] : "";
+      }
+
+      const schoolId = detailValue("School ID");
+      const locationParts = [
+        detailValue("Region"),
+        detailValue("Division"),
+        detailValue("Municipality"),
+        detailValue("Legislative District"),
+        detailValue("School District")
+      ].filter(function(value) {
+        return !isBlankCsvValue(value);
+      });
+
+      return {
+        view: view,
+        row: row,
+        rowIndex: rowIndex,
+        point: point,
+        schoolId: schoolId,
+        locationParts: locationParts,
+        status: status
+      };
+    }
+
+    function buildPrintableSchoolProfileHtml(context) {
+      const title = safeText(context.point.name);
+      const schoolId = context.schoolId ? "School ID " + safeText(context.schoolId) : "School Profile";
+      const location = safeText(context.locationParts.join(" | "));
+      const status = safeText(context.status.label || "Profile");
+      const sectionHtml = buildModalDetailHtml(context.view, context.row, context.rowIndex, context.point);
+      const generatedDate = new Date().toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
+      const fileName = safeText(String(context.point.name || "school-profile").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-profile.html");
+
+      return [
+        "<!DOCTYPE html>",
+        "<html lang=\"en\">",
+        "<head>",
+        "<meta charset=\"UTF-8\" />",
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />",
+        "<title>" + title + " | School Profile</title>",
+        "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">",
+        "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>",
+        "<link href=\"https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Quicksand:wght@700;800;900&display=swap\" rel=\"stylesheet\">",
+        "<style>",
+        ":root{--navy:#08315F;--blue:#075985;--blue-600:#0284C7;--blue-100:#E0F2FE;--blue-50:#F0F9FF;--gold:#FBBF24;--text:#0F172A;--muted:#64748B;--line:#BAE6FD;--font-heading:Quicksand,ui-sans-serif,system-ui,sans-serif;--font-body:'Comic Neue',ui-sans-serif,system-ui,sans-serif;}",
+        "*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}html{background:var(--blue-50);}body{margin:0;color:var(--text);font-family:var(--font-body);font-weight:700;background:radial-gradient(43.5% 49.5% at 10% 12%,rgba(7,89,133,.18) 0 34%,transparent 78%),radial-gradient(46.5% 54% at 92% 10%,rgba(251,191,36,.24) 0 36%,transparent 80%),var(--blue-50);}",
+        ".profile{width:min(1000px,calc(100% - 40px));margin:28px auto;padding-bottom:28px;}",
+        ".profile-hero{position:relative;overflow:hidden;border:3px solid color-mix(in srgb,var(--blue) 72%,var(--navy) 28%);border-radius:28px;background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;box-shadow:0 18px 42px rgba(15,23,42,.18);}",
+        ".profile-hero::after{content:'';position:absolute;right:-80px;top:-80px;width:260px;height:260px;border-radius:999px;background:rgba(251,191,36,.18);box-shadow:0 0 0 44px rgba(224,242,254,.08);}",
+        ".profile-hero-inner{position:relative;z-index:1;padding:28px 34px 24px;border-bottom:5px solid var(--gold);}",
+        ".profile-kicker{margin:0 0 8px;color:#BAE6FD;font:900 10px/1 var(--font-heading);letter-spacing:.18em;text-transform:uppercase;}",
+        "h1{margin:0;color:#E0F2FE;font:900 clamp(28px,4vw,46px)/1.02 var(--font-heading);letter-spacing:-.04em;text-shadow:0 2px 0 rgba(15,23,42,.22);}",
+        ".profile-location{margin-top:9px;color:#E0F2FE;font:900 11px/1.25 var(--font-body);text-transform:uppercase;}",
+        ".profile-meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px;}",
+        ".profile-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.14);color:#E0F2FE;font:900 9px/1 var(--font-heading);letter-spacing:.1em;text-transform:uppercase;}",
+        ".profile-pill::before{content:'';width:8px;height:8px;border-radius:999px;background:var(--gold);box-shadow:0 0 0 3px rgba(251,191,36,.2);}",
+        ".profile-note{margin:10px 0 0;color:#BAE6FD;font:700 11px/1.35 var(--font-body);}",
+        ".profile-actions{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;gap:10px;margin:0 0 14px;padding:10px 0;}",
+        ".profile-actions button{border:0;border-radius:999px;padding:10px 14px;background:var(--navy);color:#fff;font:900 11px/1 var(--font-heading);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:inset 0 -3px 0 var(--gold),0 8px 18px rgba(15,23,42,.16);}",
+        ".modal-section-grid{display:grid;gap:12px;padding:16px 0 0;background:transparent;}",
+        ".modal-section{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 8px 18px rgba(15,23,42,.07);break-inside:avoid;}",
+        ".modal-section-title{display:flex;align-items:center;gap:8px;padding:10px 13px;color:var(--navy);background:linear-gradient(90deg,#E0F2FE,#F8FCFF);border-bottom:1px solid var(--line);font:900 10px/1 var(--font-heading);letter-spacing:.12em;text-transform:uppercase;}",
+        ".modal-section-title::before{content:'';display:block;width:8px;height:8px;border-radius:999px;background:var(--gold);box-shadow:0 0 0 3px rgba(251,191,36,.18);}",
+        ".modal-section-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;padding:9px 14px 12px;}",
+        ".map-card-row{display:grid;grid-template-columns:minmax(128px,.95fr) minmax(0,1.05fr);gap:8px;padding:8px 0;border-bottom:1px solid #E2E8F0;font-size:11px;line-height:1.15;}",
+        ".map-card-label{color:var(--muted);font:900 8.5px/1.1 var(--font-heading);letter-spacing:.08em;text-transform:uppercase;}",
+        ".map-card-value{color:var(--navy);font-weight:900;overflow-wrap:anywhere;}",
+        ".modal-highlight-strip{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0;}",
+        ".modal-highlight-chip,.modal-highlight-row{padding:11px 12px;border:2px solid color-mix(in srgb,var(--gold) 72%,#F97316 28%);border-radius:16px;background:linear-gradient(135deg,rgba(251,191,36,.22),rgba(224,242,254,.78));box-shadow:0 8px 18px rgba(251,191,36,.18);}",
+        ".modal-highlight-row{grid-column:1/-1;}",
+        ".modal-highlight-chip .map-card-label,.modal-highlight-row .map-card-label{color:#92400E;}",
+        ".modal-highlight-chip .map-card-value,.modal-highlight-row .map-card-value{color:var(--navy);font:900 18px/1 var(--font-heading);letter-spacing:-.02em;}",
+        "@media(max-width:720px){.profile{width:min(100% - 20px,1000px);margin:12px auto;}.modal-section-body{grid-template-columns:1fr;}.modal-highlight-strip{grid-template-columns:1fr;}}",
+        "@page{size:A4 portrait;margin:12mm;}",
+        "@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}html,body{width:210mm;min-height:297mm;background:var(--blue-50)!important;}.profile{width:100%;max-width:none;margin:0;padding:0;}.profile-actions{display:none!important;}.profile-hero{box-shadow:none;break-inside:avoid;page-break-inside:avoid;}.profile-hero,.modal-section,.modal-highlight-chip,.modal-highlight-row{background-clip:padding-box;}.modal-section-grid{padding-top:10mm;}.modal-section{box-shadow:none;break-inside:avoid;page-break-inside:avoid;}.modal-section-title,.profile-hero,.profile-pill,.modal-highlight-chip,.modal-highlight-row{print-color-adjust:exact;-webkit-print-color-adjust:exact;}}",
+        "<" + "/style>",
+        "<" + "/head>",
+        "<body>",
+        "<main class=\"profile\">",
+        "<div class=\"profile-actions\"><button type=\"button\" onclick=\"window.print()\">Print</button><button type=\"button\" onclick=\"var a=document.createElement('a');var b=new Blob([document.documentElement.outerHTML],{type:'text/html'});a.href=URL.createObjectURL(b);a.download='" + fileName + "';a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},1000);\">Download HTML</button></div>",
+        "<header class=\"profile-hero\"><div class=\"profile-hero-inner\"><div class=\"profile-kicker\">" + schoolId + "</div><h1>" + title + "</h1><div class=\"profile-location\">" + location + "</div><div class=\"profile-meta\"><span class=\"profile-pill\">" + status + "</span><span class=\"profile-pill\">Generated " + safeText(generatedDate) + "</span></div><p class=\"profile-note\">Department of Education | Human Resource and Organizational Development and Infrastructure Strand</p></div></header>",
+        sectionHtml,
+        "<" + "/main>",
+        "<" + "/body>",
+        "<" + "/html>"
+      ].join("");
+    }
+
+    function openPrintableSchoolProfile() {
+      if (!currentSchoolProfileContext) return;
+
+      const html = buildPrintableSchoolProfileHtml(currentSchoolProfileContext);
+      const profileWindow = window.open("", "_blank");
+
+      if (profileWindow && profileWindow.document) {
+        profileWindow.document.open();
+        profileWindow.document.write(html);
+        profileWindow.document.close();
+        profileWindow.focus();
+        setTimeout(function() {
+          if (profileWindow.print) profileWindow.print();
+        }, 450);
+        return;
+      }
+
+      const blob = new Blob([html], { type: "text/html" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = String(currentSchoolProfileContext.point.name || "school-profile").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") + "-profile.html";
+      link.click();
+      setTimeout(function() {
+        URL.revokeObjectURL(link.href);
+      }, 1000);
+    }
+
+    function openSchoolDetailModal(view, row, rowIndex, point) {
+      const modal = document.getElementById("schoolDetailModal");
+      const modalKicker = document.getElementById("schoolDetailModalKicker");
+      const modalTitle = document.getElementById("schoolDetailModalTitle");
+      const modalLocation = document.getElementById("schoolDetailModalLocation");
+      const modalStatus = document.getElementById("schoolDetailModalStatus");
+      const modalBody = document.getElementById("schoolDetailModalBody");
+
+      if (!modal || !modalTitle || !modalBody) return;
+
+      const profileContext = getSchoolProfileContext(view, row, rowIndex, point);
+      const status = profileContext.status;
+      currentSchoolProfileContext = profileContext;
+
+      if (modalKicker) {
+        modalKicker.textContent = profileContext.schoolId ? "School ID " + profileContext.schoolId : "School Detail";
+      }
+
+      modalTitle.textContent = point.name;
+
+      if (modalLocation) {
+        modalLocation.textContent = profileContext.locationParts.join(" | ");
+        modalLocation.style.display = profileContext.locationParts.length ? "block" : "none";
+      }
+
+      if (modalStatus) {
+        modalStatus.innerHTML = '<span class="map-card-status-dot"></span>' + safeText(status.label);
+        modalStatus.style.display = status && status.label ? "inline-flex" : "none";
+      }
+
+      modalBody.innerHTML = buildModalDetailHtml(view, row, rowIndex, point);
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+
+      const closeButton = document.getElementById("schoolDetailModalClose");
+      if (closeButton) closeButton.focus({ preventScroll: true });
+    }
+
+    function closeSchoolDetailModal() {
+      const modal = document.getElementById("schoolDetailModal");
+      if (!modal) return;
+
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    function setupSchoolDetailModal() {
+      const modal = document.getElementById("schoolDetailModal");
+      const closeButton = document.getElementById("schoolDetailModalClose");
+      const printButton = document.getElementById("schoolDetailModalPrint");
+
+      if (closeButton) {
+        closeButton.addEventListener("click", closeSchoolDetailModal);
+      }
+
+      if (printButton) {
+        printButton.addEventListener("click", openPrintableSchoolProfile);
+      }
+
+      if (modal) {
+        modal.addEventListener("click", function(event) {
+          if (event.target === modal) {
+            closeSchoolDetailModal();
+          }
+        });
+      }
+
+      document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+          closeSchoolDetailModal();
+        }
+      });
+    }
+
+    function valueByColumn(view, row, columnAliases) {
+      const normalizedAliases = columnAliases.map(function(alias) {
+        return String(alias).toLowerCase();
+      });
+      const columnIndex = view.columns.findIndex(function(column) {
+        const normalizedColumn = String(column).toLowerCase();
+        return normalizedAliases.some(function(alias) {
+          return normalizedColumn.includes(alias);
+        });
+      });
+
+      return columnIndex > -1 ? row[columnIndex] : "";
+    }
+
+    function markerStatusForRow(view, row, rowIndex) {
+      if (activeTabKey === "teaching") {
+        const shortage = toNumber(valueByColumn(view, row, ["total shortage"]));
+        const excess = toNumber(valueByColumn(view, row, ["total excess"]));
+
+        if (shortage && shortage > 0) return { className: "critical", label: "Shortage" };
+        if (excess && excess > 0) return { className: "info", label: "Excess" };
+        return { className: "success", label: "Balanced" };
+      }
+
+      if (activeTabKey === "nonTeaching") {
+        const combined = row.join(" ").toLowerCase();
+        const hasAo = combined.includes("dedicated") || combined.includes("clustered") || combined.includes("with ao");
+        const hasPdo = combined.includes("with pdo");
+
+        if (!hasAo && !hasPdo) return { className: "critical", label: "No AO II and PDO I" };
+        if (hasAo && hasPdo) return { className: "success", label: "With AO II and PDO I" };
+        return { className: "warning", label: "With at least 1 AO II or PDO I" };
+      }
+
+      if (activeTabKey === "classrooms") {
+        const shortage = toNumber(valueByColumn(view, row, ["estimated classroom shortage", "classroom shortage", "estimated classrooms"]));
+
+        return shortage && shortage > 0
+          ? { className: "critical", label: "With Shortage" }
+          : { className: "success", label: "Without Shortage" };
+      }
+
+      if (activeTabKey === "congestion") {
+        const ratio = toNumber(valueByColumn(view, row, ["congestion ratio", "congestion"]));
+
+        if (ratio !== null && ratio > 0.9) return { className: "critical", label: "High (> 0.9)" };
+        if (ratio !== null && ratio >= 0.75) return { className: "warning", label: "Medium (0.75 - 0.9)" };
+        return { className: "success", label: "Low (< 0.75)" };
+      }
+
+      if (activeTabKey === "lastMile") {
+        const shortage = toNumber(valueByColumn(view, row, ["classroom shortage", "shortage"]));
+        const buildable = String(valueByColumn(view, row, ["buildable"])).toLowerCase();
+        const hasShortage = shortage && shortage > 0;
+        const hasBuildable = ["yes", "y", "true", "1"].includes(buildable);
+
+        if (hasShortage && !hasBuildable) return { className: "critical", label: "With Shortage + Without Buildable Space" };
+        if (hasShortage && hasBuildable) return { className: "success", label: "With Shortage + With Buildable Space" };
+        return { className: "neutral", label: "Without Shortage + No Buildable Space" };
+      }
+
+      if (activeTabKey === "industries") {
+        return { className: "industry", label: "Industry Partner" };
+      }
+
+      if (activeTabKey === "facilities") {
+        const combined = row.join(" ").toLowerCase();
+        const needsSupport = combined.includes("no electricity") || combined.includes("no piped water") || combined.includes("without");
+
+        return needsSupport
+          ? { className: "critical", label: "Facility Support Needed" }
+          : { className: "success", label: "Facility Available" };
+      }
+
+      return rowIndex === 0
+        ? { className: "critical", label: "With Critical Gap" }
+        : { className: "success", label: "Without Critical Gap" };
+    }
+
+    function getLegendForTab(tabKey) {
+      const legends = {
+        teaching: {
+          title: "Teacher Deployment",
+          items: [
+            ["red", "Shortage"],
+            ["blue", "Excess"],
+            ["green", "Balanced"]
+          ]
+        },
+        nonTeaching: {
+          title: "Legend",
+          items: [
+            ["red", "No AO II and PDO I"],
+            ["green", "With AO II and PDO I"],
+            ["yellow", "With at least 1 AO II or PDO I"]
+          ]
+        },
+        classrooms: {
+          title: "Legend",
+          items: [
+            ["red", "With Classroom Shortage"],
+            ["green", "Without Classroom Shortage"]
+          ]
+        },
+        congestion: {
+          title: "Congestion Index",
+          items: [
+            ["red", "High (> 0.9)"],
+            ["orange", "Medium (0.75 - 0.9)"],
+            ["green", "Low (< 0.75)"]
+          ]
+        },
+        lastMile: {
+          title: "Last Mile Schools Status",
+          items: [
+            ["red", "With Shortage + Without Buildable Space"],
+            ["green", "With Shortage + With Buildable Space"],
+            ["gray", "Without Shortage + No Buildable Space"]
+          ]
+        },
+        industries: {
+          title: "SHS Industries",
+          items: [
+            ["purple", "Industry Partner"]
+          ]
+        },
+        facilities: {
+          title: "Facilities Status",
+          items: [
+            ["red", "Facility Support Needed"],
+            ["green", "Facility Available"]
+          ]
+        }
+      };
+
+      return legends[tabKey] || {
+        title: "Legend",
+        items: [
+          ["red", "With Critical Gap"],
+          ["green", "Without Critical Gap"]
+        ]
+      };
+    }
+
+    function updateMapLegend() {
+      const legendBody = document.getElementById("mapLegendBody");
+      if (!legendBody) return;
+
+      const legend = getLegendForTab(activeTabKey);
+      legendBody.innerHTML =
+        "<h4>" + safeText(legend.title) + "</h4>" +
+        legend.items.map(function(item) {
+          return '<div class="legend-row"><span class="dot ' + safeText(item[0]) + '"></span> ' + safeText(item[1]) + "</div>";
+        }).join("");
+    }
+
+    function pulseFocusedMarker(marker) {
+      const element = marker && marker.getElement ? marker.getElement() : null;
+      const icon = element ? element.querySelector(".school-marker") : null;
+
+      if (!icon) return;
+
+      icon.classList.remove("fly-focus");
+      void icon.offsetWidth;
+      icon.classList.add("fly-focus");
+
+      setTimeout(function() {
+        icon.classList.remove("fly-focus");
+      }, 980);
+    }
+
+    function flyToMarker(marker) {
+      const sequence = ++activeFlySequence;
+      const targetZoom = 17;
+      const latLng = marker.getLatLng();
+      const currentCenter = map.getCenter();
+      const currentZoom = map.getZoom();
+      const flyOutZoom = Math.min(9, Math.max(6, currentZoom - 5));
+
+      function finishFlyIn() {
+        if (sequence !== activeFlySequence) return;
+
+        if (marker.openTooltip) {
+          marker.openTooltip();
+        }
+
+        pulseFocusedMarker(marker);
+      }
+
+      if (marker.closeTooltip) {
+        marker.closeTooltip();
+      }
+
+      map.flyTo(currentCenter, flyOutZoom, {
+        animate: true,
+        duration: .5,
+        easeLinearity: .24,
+        noMoveStart: true
+      });
+
+      map.once("moveend", function() {
+        if (sequence !== activeFlySequence) return;
+
+        map.flyTo(latLng, flyOutZoom, {
+          animate: true,
+          duration: .72,
+          easeLinearity: .2,
+          noMoveStart: true
+        });
+
+        map.once("moveend", function() {
+          if (sequence !== activeFlySequence) return;
+
+          map.flyTo(latLng, targetZoom, {
+            animate: true,
+            duration: 1.02,
+            easeLinearity: .13,
+            noMoveStart: true
+          });
+
+          map.once("moveend", finishFlyIn);
+        });
+      });
+    }
+
+    function zoomToRow(rowKey) {
+      const marker = markerByRowKey[rowKey];
+
+      if (!marker || !map) {
+        return;
+      }
+
+      if (markerClusterLayer && markerClusterLayer.zoomToShowLayer) {
+        markerClusterLayer.zoomToShowLayer(marker, function() {
+          flyToMarker(marker);
+        });
+      } else {
+        flyToMarker(marker);
+      }
+    }
+
+    async function renderMapMarkers(view) {
+      if (!map || !markerClusterLayer) {
+        return;
+      }
+
+      const token = ++mapRenderToken;
+      const visibleRowIndexes = getVisibleRowIndexes(view);
+
+      updateMapLegend();
+      markerClusterLayer.clearLayers();
+      markerByRowKey = {};
+
+      for (let start = 0; start < visibleRowIndexes.length; start += MAP_MARKER_CHUNK_SIZE) {
+        if (token !== mapRenderToken) return;
+
+        const markers = visibleRowIndexes.slice(start, start + MAP_MARKER_CHUNK_SIZE).map(function(originalIndex) {
+          const row = view.rows[originalIndex];
+          const point = getPointForRow(view, row, originalIndex);
+          const rowKey = getRowKey(point.name, originalIndex);
+          const status = markerStatusForRow(view, row, originalIndex);
+          const markerIcon = L.divIcon({
+            className: "",
+            html: '<div class="school-marker ' + safeText(status.className) + '" aria-label="' + safeText(status.label) + '">🏫</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          });
+          const marker = L.marker([point.lat, point.lng], {
+            icon: markerIcon
+          }).bindTooltip(function() {
+            return buildHoverCardHtml(view, row, originalIndex, point);
+          }, {
+            className: "school-hover-card",
+            direction: "top",
+            offset: [0, -18],
+            opacity: 1,
+            sticky: true
+          });
+
+          marker.dashboardDetail = function() {
+            openSchoolDetailModal(view, row, originalIndex, point);
+          };
+
+          marker.on("click", function() {
+            marker.closeTooltip();
+            marker.dashboardDetail();
+          });
+
+          markerByRowKey[rowKey] = marker;
+          return marker;
+        });
+
+        markerClusterLayer.addLayers(markers);
+        await yieldToBrowser();
+      }
+    }
+
+    async function switchTab(tabKey) {
+      activeTabKey = tabKey;
+      const view = views[tabKey];
+
+      document.querySelectorAll(".nav button").forEach(function(button) {
+        button.classList.toggle("active", button.dataset.tab === tabKey);
+        button.blur();
+      });
+
+      document.getElementById("pageHeading").textContent = view.heading;
+      document.getElementById("pageSubtitle").textContent =
+        view.summary + " as of SY 2025-2026.";
+
+      document.getElementById("tableTitle").textContent = view.tableTitle;
+      document.getElementById("mapTitle").textContent = view.mapTitle;
+
+      if (DATA_FILE_BY_TAB[tabKey] && !processedTabs[tabKey]) {
+        document.getElementById("pageSubtitle").textContent = "Loading " + DATA_FILE_BY_TAB[tabKey] + " from the same folder...";
+        try {
+          await loadCsvForTab(tabKey);
+          if (activeTabKey !== tabKey) return;
+          document.getElementById("pageSubtitle").textContent =
+            view.summary + " as of SY 2025-2026.";
+        } catch (error) {
+          console.warn(error);
+          document.getElementById("pageSubtitle").textContent =
+            "Using fallback sample rows because " + DATA_FILE_BY_TAB[tabKey] + " could not be loaded from the same folder.";
+        }
+      }
+
+      tablePageIndex = 0;
+      renderKpis(view);
+      renderTable(view);
+      renderMapMarkers(view);
+
+      if (map) {
+        setTimeout(function() {
+          map.invalidateSize();
+        }, 80);
+      }
+    }
+
+    function setMapMode(mode) {
+      const config = MAP_TILE_MODES[mode] || MAP_TILE_MODES.road;
+      activeMapMode = mode;
+
+      if (activeBaseLayer) {
+        map.removeLayer(activeBaseLayer);
+      }
+
+      activeBaseLayer = L.tileLayer(config.url, {
+        maxZoom: config.maxZoom,
+        attribution: config.attribution
+      }).addTo(map);
+
+      document.querySelectorAll(".map-mode-option").forEach(function(option) {
+        option.classList.toggle("active", option.dataset.mapMode === activeMapMode);
+      });
+      document.querySelectorAll(".map-mode-radio").forEach(function(input) {
+        input.checked = input.value === activeMapMode;
+      });
+    }
+
+    function addMapModeControl() {
+      const modeControl = L.control({ position: "topright" });
+
+      modeControl.onAdd = function() {
+        const container = L.DomUtil.create("div", "map-mode-control");
+        container.innerHTML =
+          '<div class="map-mode-icon" aria-label="Map mode"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg></div>' +
+          '<div class="map-mode-title">Map Mode</div>' +
+          '<div class="map-mode-options" role="radiogroup" aria-label="Map mode">' +
+          '<label class="map-mode-option active" data-map-mode="road"><input class="map-mode-radio" type="radio" name="mapMode" value="road" checked />Road</label>' +
+          '<label class="map-mode-option" data-map-mode="terrain"><input class="map-mode-radio" type="radio" name="mapMode" value="terrain" />Terrain</label>' +
+          '<label class="map-mode-option" data-map-mode="satellite"><input class="map-mode-radio" type="radio" name="mapMode" value="satellite" />Satellite</label>' +
+          '<label class="map-mode-option" data-map-mode="light"><input class="map-mode-radio" type="radio" name="mapMode" value="light" />Light</label>' +
+          '</div>';
+
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+
+        container.querySelectorAll(".map-mode-radio").forEach(function(input) {
+          input.addEventListener("change", function() {
+            setMapMode(input.value);
+          });
+        });
+
+        return container;
+      };
+
+      modeControl.addTo(map);
+    }
+
+    function initMap() {
+      map = L.map("resourceMap", {
+        zoomControl: true,
+        attributionControl: true
+      }).setView(PHILIPPINES_CENTER, PHILIPPINES_ZOOM);
+
+      setMapMode("road");
+      addMapModeControl();
+
+      markerClusterLayer = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        spiderfyOnMaxZoom: true,
+        zoomToBoundsOnClick: true,
+        disableClusteringAtZoom: 13,
+        maxClusterRadius: 44,
+        chunkedLoading: true,
+        chunkInterval: 120,
+        chunkDelay: 30,
+        removeOutsideVisibleBounds: true,
+        iconCreateFunction: function(cluster) {
+          return L.divIcon({
+            className: "",
+            html: '<div class="school-cluster">' + cluster.getChildCount() + '</div>',
+            iconSize: [38, 38],
+            iconAnchor: [19, 19]
+          });
+        }
+      });
+
+      markerClusterLayer.on("clusterclick", function(event) {
+        const cluster = event.layer;
+        const targetZoom = Math.min(map.getMaxZoom(), map.getZoom() + 3);
+
+        map.flyToBounds(cluster.getBounds(), {
+          padding: [36, 36],
+          maxZoom: targetZoom,
+          duration: .55
+        });
+
+        if (map.getZoom() >= 13 && cluster.spiderfy) {
+          setTimeout(function() {
+            cluster.spiderfy();
+          }, 220);
+        }
+      });
+
+      map.addLayer(markerClusterLayer);
+
+      const legend = L.control({ position: "bottomright" });
+      legend.onAdd = function () {
+        const div = L.DomUtil.create("div", "map-legend");
+        div.id = "mapLegendBody";
+        return div;
+      };
+      legend.addTo(map);
+      updateMapLegend();
+
+
+    }
+
+    document.querySelectorAll(".nav button").forEach(function(button) {
+      button.addEventListener("click", function() {
+        switchTab(button.dataset.tab);
+      });
+    });
+
+    function changeTablePage(direction) {
+      const view = views[activeTabKey];
+      const totalRows = getVisibleRowIndexes(view).length;
+      const totalPages = Math.max(1, Math.ceil(totalRows / TABLE_PAGE_SIZE));
+
+      if (direction === "first") tablePageIndex = 0;
+      if (direction === "prev") tablePageIndex = Math.max(0, tablePageIndex - 1);
+      if (direction === "next") tablePageIndex = Math.min(totalPages - 1, tablePageIndex + 1);
+      if (direction === "last") tablePageIndex = totalPages - 1;
+
+      renderTable(view);
+    }
+
+    document.getElementById("tableFirst").addEventListener("click", function() {
+      changeTablePage("first");
+    });
+    document.getElementById("tablePrev").addEventListener("click", function() {
+      changeTablePage("prev");
+    });
+    document.getElementById("tableNext").addEventListener("click", function() {
+      changeTablePage("next");
+    });
+    document.getElementById("tableLast").addEventListener("click", function() {
+      changeTablePage("last");
+    });
+
+    window.addEventListener("load", async function() {
+      setupSchoolDetailModal();
+      initMap();
+      setupTableControls();
+      await setupGeoFilterControls();
+      switchTab("teaching");
+    });
+  </script>
+</body>
+</html>
