@@ -1373,6 +1373,7 @@
       gap: 8px;
     }
 
+    .detail-modal-download,
     .detail-modal-print,
     .detail-modal-close {
       display: grid;
@@ -1395,6 +1396,19 @@
       font-size: 20px;
     }
 
+    .detail-modal-download {
+      width: auto;
+      min-width: 104px;
+      padding: 0 12px;
+      font-family: var(--font-heading);
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .detail-modal-download:hover,
     .detail-modal-print:hover,
     .detail-modal-close:hover {
       background: rgba(255,255,255,.22);
@@ -1566,28 +1580,29 @@
       font-size: 15px;
       font-weight: 900;
       box-shadow: 0 3px 8px rgba(0,0,0,.28);
-      transform-origin: center;
+      transform-origin: center bottom;
       will-change: transform, box-shadow;
-      transition: transform .22s ease, box-shadow .22s ease;
+      transition: transform .34s cubic-bezier(.22, 1, .36, 1), box-shadow .34s ease, background-color .2s ease, color .2s ease;
     }
 
     .school-marker.fly-focus {
-      animation: markerFlyFocus .92s cubic-bezier(.16, 1, .3, 1) both;
-      box-shadow: 0 0 0 8px rgba(251, 191, 36, .28), 0 9px 22px rgba(15,23,42,.38);
+      z-index: 1000;
+      animation: markerFlyFocus .6s cubic-bezier(.22, 1, .36, 1) both;
+      box-shadow: 0 0 0 5px rgba(251, 191, 36, .34), 0 0 0 11px rgba(251, 191, 36, .14), 0 10px 24px rgba(15,23,42,.32);
     }
 
     @keyframes markerFlyFocus {
       0% {
-        transform: scale(.72);
-        filter: saturate(.86);
+        transform: scale(.86);
+        filter: saturate(.96);
       }
-      55% {
-        transform: scale(1.34);
-        filter: saturate(1.25);
+      60% {
+        transform: scale(1.16);
+        filter: saturate(1.12);
       }
       100% {
-        transform: scale(1);
-        filter: saturate(1);
+        transform: scale(1.07);
+        filter: saturate(1.03);
       }
     }
 
@@ -2149,7 +2164,8 @@
         <div class="detail-modal-location" id="schoolDetailModalLocation"></div>
         <div class="detail-modal-status" id="schoolDetailModalStatus"><span class="map-card-status-dot"></span>Balanced</div>
         <div class="detail-modal-actions">
-          <button type="button" class="detail-modal-print" id="schoolDetailModalPrint" aria-label="Open printable school profile">⎙</button>
+          <button type="button" class="detail-modal-download" id="schoolDetailModalDownload" aria-label="Print school profile to PDF" onclick="printCurrentSchoolProfilePdf()">Print PDF</button>
+          <button type="button" class="detail-modal-print" id="schoolDetailModalPrint" aria-label="Open printable school profile" style="display:none">⎙</button>
           <button type="button" class="detail-modal-close" id="schoolDetailModalClose" aria-label="Close school detail">×</button>
         </div>
       </div>
@@ -2865,6 +2881,127 @@
     let markerByRowKey = {};
     let activeFlySequence = 0;
 let currentSchoolProfileContext = null;
+
+    function getDashboardStyleText() {
+      return Array.from(document.querySelectorAll("style")).map(function(styleBlock) {
+        return styleBlock.textContent || "";
+      }).join("\n");
+    }
+
+    function printCurrentSchoolProfilePdf() {
+      const modal = document.getElementById("schoolDetailModal");
+      const titleElement = document.getElementById("schoolDetailModalTitle");
+      const locationElement = document.getElementById("schoolDetailModalLocation");
+      const statusElement = document.getElementById("schoolDetailModalStatus");
+      const bodyElement = document.getElementById("schoolDetailModalBody");
+
+      if (!modal || !modal.classList.contains("open") || !bodyElement) {
+        console.warn("Open a school profile before printing to PDF.");
+        return;
+      }
+
+      const profileTitle = (titleElement && titleElement.textContent ? titleElement.textContent.trim() : "School Profile") || "School Profile";
+      const profileLocation = locationElement && locationElement.textContent ? locationElement.textContent.trim() : "";
+      const profileStatus = statusElement && statusElement.textContent ? statusElement.textContent.trim() : "";
+      const fileName = profileTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "school-profile";
+      const downloadedDocument = document.implementation.createHTMLDocument(profileTitle);
+
+      downloadedDocument.documentElement.lang = "en";
+      downloadedDocument.head.innerHTML =
+        '<meta charset="UTF-8">' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+        '<title>' + safeText(profileTitle) + '</title>' +
+        '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+        '<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Quicksand:wght@700;800;900&display=swap" rel="stylesheet">';
+
+      const downloadedStyle = downloadedDocument.createElement("style");
+      downloadedStyle.textContent = getDashboardStyleText() + "\n" +
+        "body { padding: 24px; }\n" +
+        ".downloaded-profile { max-width: 980px; margin: 0 auto; border: 3px solid color-mix(in srgb, var(--blue) 72%, var(--navy) 28%); border-radius: 26px; overflow: hidden; background: #fff; box-shadow: 0 24px 64px rgba(15,23,42,.22); }\n" +
+        ".downloaded-profile .detail-modal-top { position: relative; }\n" +
+        ".downloaded-profile .detail-modal-actions { display: none; }\n" +
+        ".downloaded-profile .detail-modal-body { max-height: none; overflow: visible; }\n" +
+        "@page { size: A4; margin: 12mm; }\n" +
+        "@media print { html, body { padding: 0; margin: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .downloaded-profile { max-width: none; width: 100%; margin: 0; border: 0; border-radius: 0; box-shadow: none; overflow: visible; } .downloaded-profile .detail-modal-top { break-inside: avoid; page-break-inside: avoid; } .modal-section-grid { padding: 0; gap: 14px; } .modal-section { break-inside: avoid; page-break-inside: avoid; box-shadow: none; } .modal-section-title { break-after: avoid; page-break-after: avoid; } .modal-section-body { break-inside: avoid; page-break-inside: avoid; } .map-card-row, .modal-highlight-chip, .modal-highlight-strip, .modal-highlight-row { break-inside: avoid; page-break-inside: avoid; } }";
+      downloadedDocument.head.appendChild(downloadedStyle);
+
+      const article = downloadedDocument.createElement("article");
+      const header = downloadedDocument.createElement("header");
+      const kicker = downloadedDocument.createElement("div");
+      const title = downloadedDocument.createElement("h1");
+      const location = downloadedDocument.createElement("div");
+      const status = downloadedDocument.createElement("div");
+      const statusDot = downloadedDocument.createElement("span");
+      const main = downloadedDocument.createElement("main");
+
+      article.className = "downloaded-profile";
+      header.className = "detail-modal-top";
+      kicker.className = "detail-modal-kicker";
+      kicker.textContent = "School Profile";
+      title.className = "detail-modal-title";
+      title.textContent = profileTitle;
+      location.className = "detail-modal-location";
+      location.textContent = profileLocation;
+      status.className = "detail-modal-status";
+      statusDot.className = "map-card-status-dot";
+      status.appendChild(statusDot);
+      status.appendChild(downloadedDocument.createTextNode(profileStatus));
+      main.className = "detail-modal-body";
+      main.innerHTML = bodyElement.innerHTML;
+
+      header.appendChild(kicker);
+      header.appendChild(title);
+      header.appendChild(location);
+      header.appendChild(status);
+      article.appendChild(header);
+      article.appendChild(main);
+      downloadedDocument.body.appendChild(article);
+
+      const html = "<!DOCTYPE html>\n" + downloadedDocument.documentElement.outerHTML;
+      const existingFrame = document.getElementById("schoolProfilePrintFrame");
+      if (existingFrame) existingFrame.remove();
+
+      const printFrame = document.createElement("iframe");
+      printFrame.id = "schoolProfilePrintFrame";
+      printFrame.setAttribute("aria-hidden", "true");
+      printFrame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;";
+      printFrame.srcdoc = html;
+
+      printFrame.onload = function() {
+        const frameWindow = printFrame.contentWindow;
+        if (!frameWindow) return;
+
+        const runPrint = function() {
+          try {
+            frameWindow.focus();
+            frameWindow.print();
+          } catch (error) {
+            console.warn("Print failed", error);
+          }
+        };
+
+        frameWindow.onafterprint = function() {
+          setTimeout(function() { printFrame.remove(); }, 200);
+        };
+
+        if (frameWindow.document.fonts && frameWindow.document.fonts.ready) {
+          frameWindow.document.fonts.ready.then(function() {
+            setTimeout(runPrint, 200);
+          }).catch(function() {
+            setTimeout(runPrint, 300);
+          });
+        } else {
+          setTimeout(runPrint, 400);
+        }
+
+        setTimeout(function() {
+          if (document.body.contains(printFrame)) printFrame.remove();
+        }, 60000);
+      };
+
+      document.body.appendChild(printFrame);
+    }
 
     function safeText(value) {
       return String(value).replace(/[&<>"']/g, function(character) {
