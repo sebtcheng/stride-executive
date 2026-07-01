@@ -1074,7 +1074,7 @@
     }
 
     .leaflet-tooltip.school-hover-card {
-      width: min(330px, 78vw);
+      width: min(408px, 92vw);
       padding: 0;
       opacity: 1;
       pointer-events: none;
@@ -1185,7 +1185,8 @@
       background: transparent;
       white-space: normal;
       word-break: normal;
-      overflow-wrap: anywhere;
+      overflow-wrap: break-word;
+      hyphens: none;
     }
 
     .map-kpi-table tr:last-child th,
@@ -1217,15 +1218,31 @@
     }
 
     .map-kpi-table.two-column th {
-      width: 28%;
+      width: 16%;
     }
 
     .map-kpi-table.two-column td {
-      width: 22%;
+      width: 34%;
+    }
+
+    .map-kpi-table.two-column td:nth-child(2) {
+      color: var(--navy);
+      font-family: var(--font-body);
+      font-size: 9.5px;
+      font-weight: 700;
+      line-height: 1.18;
+      text-align: left;
+      letter-spacing: 0;
     }
 
     .map-kpi-table.two-column th:nth-child(3) {
+      width: 34%;
       border-left: 1px solid #E2E8F0;
+      padding-left: 12px;
+    }
+
+    .map-kpi-table.two-column td:nth-child(4) {
+      width: 16%;
     }
 
     .map-kpi-table .empty-cell {
@@ -2027,38 +2044,23 @@
             </div>
 
             <select class="select-pill" id="regionFilter">
-              <option>All Regions</option>
-              <option>Region I</option>
-              <option>NCR</option>
-              <option>Region IV-A</option>
+              <option value="">All Regions</option>
             </select>
 
             <select class="select-pill" id="divisionFilter">
-              <option>All Divisions</option>
-              <option>Alaminos City</option>
-              <option>Quezon City</option>
-              <option>Cebu City</option>
+              <option value="">All Divisions</option>
             </select>
 
             <select class="select-pill" id="municipalityFilter">
-              <option>All Municipalities</option>
-              <option>Alaminos City</option>
-              <option>Bolinao</option>
-              <option>Lingayen</option>
+              <option value="">All Municipalities</option>
             </select>
 
             <select class="select-pill" id="legislativeDistrictFilter">
-              <option>All Legislative Districts</option>
-              <option>1st Legislative District</option>
-              <option>2nd Legislative District</option>
-              <option>3rd Legislative District</option>
+              <option value="">All Legislative Districts</option>
             </select>
 
             <select class="select-pill" id="schoolDistrictFilter">
-              <option>All School Districts</option>
-              <option>District I</option>
-              <option>District II</option>
-              <option>District III</option>
+              <option value="">All School Districts</option>
             </select>
 
             <button class="reset-pill" type="button">Reset</button>
@@ -2192,7 +2194,7 @@
     const DATA_FILE_BY_TAB = {
       teaching: "stride_school_unique.csv",
       nonTeaching: "stride_school_unique.csv",
-      classrooms: "stride_school_unique.csv",
+      classrooms: "efd_classroom_july2026.csv",
       congestion: "stride_school_unique.csv",
       facilities: "stride_school_unique.csv",
       lastMile: "stride_school_unique.csv",
@@ -2200,8 +2202,8 @@
     };
 
     const SCHOOL_META_FIELDS = {
-      region: ["beis_region", "region"],
-      division: ["beis_division", "division"],
+      region: ["region"],
+      division: ["division"],
       schoolId: ["school_id", "school id"],
       municipality: ["municipality"],
       legislativeDistrict: ["legislative_district", "legislative district"],
@@ -2241,15 +2243,20 @@
       classrooms: {
         schoolBased: true,
         nameField: ["school_name", "school name", "school"],
-        columns: ["School Name", "Total Enrolment", "Classroom Inventory", "Classroom Requirement", "Estimated Classroom Shortage", "Shifting"],
+        columns: ["School Name", "District", "Street Address", "Province", "Municipality", "Legislative District", "Total Classrooms", "Classroom Requirement", "Estimated Classroom Shortage"],
         fields: [
           ["school_name", "school name", "school"],
-          ["total_enrolment", "total enrolment", "total enrollment"],
-          ["total_classrooms", "total classrooms", "instructional_rooms", "instructional rooms", "classroom inventory", "classrooms inventory"],
+          ["district", "school district"],
+          ["street_address", "street address"],
+          ["province"],
+          ["municipality"],
+          ["legislative_district", "legislative district"],
+          ["total_classrooms", "total classrooms", "classroom inventory", "classrooms inventory"],
           ["classroom_requirement", "classroom requirement"],
-          ["estimated_classroom_shortage", "estimated classroom shortage", "classroom shortage"],
-          ["shifting"]
-        ]
+          ["estimated_classroom_shortage", "estimated classroom shortage", "classroom shortage"]
+        ],
+        latitudeField: ["latitude"],
+        longitudeField: ["longitude"]
       },
       congestion: {
         schoolBased: true,
@@ -2338,6 +2345,8 @@
     let mapRenderToken = 0;
     let tablePageIndex = 0;
     let geoRecords = [];
+    let geoOptionRecords = [];
+    let geoOptionTabKey = null;
     let columnFilters = {};
     let columnFilterTimers = {};
     let activeColumnFilter = null;
@@ -2410,8 +2419,8 @@
     }
 
     function isBlankCsvValue(value) {
-      const normalized = String(value || "").trim();
-      return ["", "NA", "N/A", "#N/A", "None", "none"].includes(normalized);
+      const normalized = String(value || "").trim().toUpperCase();
+      return ["", "NA", "N/A", "#N/A", "NONE", "NULL", "NIL", "-"].includes(normalized);
     }
 
     function toNumber(value) {
@@ -2501,12 +2510,17 @@
       views[tabKey].metaRows = filteredRecords.map(buildCsvMeta);
       views[tabKey].rawRows = filteredRecords;
       views[tabKey].pointRows = filteredRecords.map(function(record, rowIndex) {
-        const lat = toNumber(getCsvValue(record, config.latitudeField || SCHOOL_META_FIELDS.latitude, ""));
-        const lng = toNumber(getCsvValue(record, config.longitudeField || SCHOOL_META_FIELDS.longitude, ""));
+        const rawLat = getCsvValue(record, config.latitudeField || SCHOOL_META_FIELDS.latitude, "");
+        const rawLng = getCsvValue(record, config.longitudeField || SCHOOL_META_FIELDS.longitude, "");
+        const lat = toNumber(rawLat);
+        const lng = toNumber(rawLng);
+        const hasValidCoordinates = lat !== null && lng !== null && Number.isFinite(lat) && Number.isFinite(lng);
+
         return {
           name: getCsvValue(record, config.nameField, "Record " + (rowIndex + 1)),
-          lat: lat,
-          lng: lng
+          lat: hasValidCoordinates ? lat : null,
+          lng: hasValidCoordinates ? lng : null,
+          hasValidCoordinates: hasValidCoordinates
         };
       });
       views[tabKey].popupRows = views[tabKey].rows.map(function(row, rowIndex) {
@@ -2516,7 +2530,8 @@
 
     async function loadCsvForTab(tabKey) {
       const fileName = DATA_FILE_BY_TAB[tabKey];
-      if (!fileName || processedTabs[tabKey]) return;
+      if (!fileName) return false;
+      if (processedTabs[tabKey]) return true;
 
       if (!csvCache[fileName]) {
         const response = await fetch(fileName + "?v=" + CSV_CACHE_BUST, { cache: "no-store" });
@@ -2529,6 +2544,16 @@
       await yieldToBrowser();
       applyCsvDataToView(tabKey, csvCache[fileName]);
       processedTabs[tabKey] = true;
+
+      if (tabKey === activeTabKey) {
+        geoOptionTabKey = null;
+        syncGeoOptionRecords();
+        GEO_FILTER_ORDER.forEach(populateGeoSelect);
+        tablePageIndex = 0;
+        renderActiveData();
+      }
+
+      return true;
     }
 
     async function loadGeoFilterRecords() {
@@ -2566,6 +2591,18 @@
       });
     }
 
+    function getGeoOptionRecords() {
+      const view = views[activeTabKey];
+      if (view && Array.isArray(view.rawRows) && view.rawRows.length) {
+        return view.rawRows;
+      }
+      return geoRecords;
+    }
+
+    function syncGeoOptionRecords() {
+      geoOptionRecords = getGeoOptionRecords();
+    }
+
     function populateGeoSelect(key) {
       const select = getGeoSelect(key);
       if (!select) return;
@@ -2573,7 +2610,7 @@
       const aliases = key === "district" ? SCHOOL_META_FIELDS.district : SCHOOL_META_FIELDS[key];
       const selected = select.value;
       const values = Array.from(new Set(
-        geoRecords
+        geoOptionRecords
           .filter(function(record) { return recordMatchesHigherFilters(record, key); })
           .map(function(record) { return getCsvValue(record, aliases, ""); })
           .filter(function(value) { return !isBlankCsvValue(value); })
@@ -2618,6 +2655,8 @@
     async function setupGeoFilterControls() {
       try {
         await loadGeoFilterRecords();
+        syncGeoOptionRecords();
+        geoOptionTabKey = activeTabKey;
         GEO_FILTER_ORDER.forEach(populateGeoSelect);
       } catch (error) {
         console.warn(error);
@@ -2647,6 +2686,12 @@
     function renderActiveData() {
       const view = views[activeTabKey];
       if (!view) return;
+
+      if (geoOptionTabKey !== activeTabKey) {
+        geoOptionTabKey = activeTabKey;
+        syncGeoOptionRecords();
+        GEO_FILTER_ORDER.forEach(populateGeoSelect);
+      }
 
       renderKpis(view);
       renderTable(view);
@@ -2881,6 +2926,49 @@
     let markerByRowKey = {};
     let activeFlySequence = 0;
 let currentSchoolProfileContext = null;
+
+    function createInvalidCoordinateLayer() {
+      const layer = L.layerGroup();
+      layer.__invalidCoordinates = true;
+      layer.getLatLng = function() { return null; };
+      layer.getElement = function() { return null; };
+      layer.bindPopup = function() { return layer; };
+      layer.bindTooltip = function() { return layer; };
+      layer.openPopup = function() { return layer; };
+      layer.closePopup = function() { return layer; };
+      layer.on = function() { return layer; };
+      layer.off = function() { return layer; };
+      layer.once = function() { return layer; };
+      layer.setIcon = function() { return layer; };
+      layer.setOpacity = function() { return layer; };
+      layer.setZIndexOffset = function() { return layer; };
+      return layer;
+    }
+
+    function installSafeLeafletMarkerFactory() {
+      if (!window.L || !L.marker || L.marker.__safeCoordinateGuardInstalled) return;
+
+      const originalMarkerFactory = L.marker;
+      const guardedMarkerFactory = function(latlng, options) {
+        const coords = Array.isArray(latlng)
+          ? latlng
+          : (latlng && typeof latlng === "object" ? [latlng.lat, latlng.lng ?? latlng.lon] : []);
+        const lat = Number(coords[0]);
+        const lng = Number(coords[1]);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+          return createInvalidCoordinateLayer();
+        }
+
+        return originalMarkerFactory.call(this, latlng, options);
+      };
+
+      guardedMarkerFactory.__safeCoordinateGuardInstalled = true;
+      guardedMarkerFactory.__originalMarkerFactory = originalMarkerFactory;
+      L.marker = guardedMarkerFactory;
+    }
+
+    installSafeLeafletMarkerFactory();
 
     function getDashboardStyleText() {
       return Array.from(document.querySelectorAll("style")).map(function(styleBlock) {
@@ -3244,6 +3332,21 @@ let currentSchoolProfileContext = null;
       return row[nameColumnIndex] || "Record " + (rowIndex + 1);
     }
 
+    function rowHasValidCoordinates(view, rowIndex) {
+      if (view.pointRows && view.pointRows[rowIndex]) {
+        return view.pointRows[rowIndex].hasValidCoordinates === true;
+      }
+
+      const row = view.rows[rowIndex];
+      const point = getPointForRow(view, row, rowIndex);
+      return !!(point && point.hasValidCoordinates !== false && Number.isFinite(point.lat) && Number.isFinite(point.lng));
+    }
+
+    function showNoValidCoordinatesNotice(rowName) {
+      const label = rowName ? rowName + " has no valid coordinates." : "This row has no valid coordinates.";
+      window.alert(label + " Map fly-in was not triggered.");
+    }
+
     function renderTable(view) {
       const displayColumns = getDisplayColumns(view);
       if (tableSortColumn && !displayColumns.includes(tableSortColumn)) {
@@ -3276,7 +3379,7 @@ let currentSchoolProfileContext = null;
         const cellsHtml = row.map(function(cell) {
           return "<td>" + safeText(cell) + "</td>";
         }).join("");
-        return '<tr data-row-key="' + safeText(rowKey) + '">' + cellsHtml + "</tr>";
+        return '<tr data-row-key="' + safeText(rowKey) + '" data-original-index="' + originalIndex + '">' + cellsHtml + "</tr>";
       }).join("");
 
       const table = document.getElementById("dataTable");
@@ -3294,6 +3397,17 @@ let currentSchoolProfileContext = null;
       table.querySelector("tbody").addEventListener("click", function(event) {
         const row = event.target.closest("tr");
         if (!row) return;
+
+        const originalIndex = Number(row.dataset.originalIndex);
+        const rowName = Number.isFinite(originalIndex) ? getRowName(view, view.rows[originalIndex], originalIndex) : "";
+
+        if (!Number.isFinite(originalIndex) || !rowHasValidCoordinates(view, originalIndex)) {
+          showNoValidCoordinatesNotice(rowName);
+          table.querySelectorAll("tbody tr").forEach(function(item) {
+            item.classList.toggle("active-row", item === row);
+          });
+          return;
+        }
 
         zoomToRow(row.dataset.rowKey);
         table.querySelectorAll("tbody tr").forEach(function(item) {
@@ -3409,14 +3523,16 @@ let currentSchoolProfileContext = null;
       }
 
       if (activeTabKey === "classrooms") {
-        const sourceRecords = getUniqueSchoolRecords();
-        const regionalRecords = sourceRecords.filter(recordMatchesSelectedRegion);
-        const divisionRecords = sourceRecords.filter(recordMatchesSelectedDivision);
+        const sourceRecords = csvCache[DATA_FILE_BY_TAB.classrooms] || getUniqueSchoolRecords();
+        const filteredRecords = sourceRecords.filter(uniqueRecordPassesGeoFilters);
+        const totalClassroomsAliases = ["total_classrooms", "total classrooms", "classroom inventory", "classrooms inventory"];
+        const classroomRequirementAliases = ["classroom_requirement", "classroom requirement"];
         const shortageAliases = ["estimated_classroom_shortage", "estimated classroom shortage", "classroom shortage"];
 
         return [
-          [sumCsvNumber(regionalRecords, shortageAliases), "Regional Classroom Shortage", "Sum of estimated classroom shortage in selected region"],
-          [sumCsvNumber(divisionRecords, shortageAliases), "Division Classroom Shortage", "Sum of estimated classroom shortage in selected division"]
+          [sumCsvNumber(filteredRecords, totalClassroomsAliases), "Total Classrooms", "Sum of total classrooms for selected filters"],
+          [sumCsvNumber(filteredRecords, classroomRequirementAliases), "Classroom Requirement", "Sum of classroom requirement for selected filters"],
+          [sumCsvNumber(filteredRecords, shortageAliases), "Estimated Classroom Shortage", "Sum of estimated classroom shortage for selected filters"]
         ];
       }
 
@@ -3468,13 +3584,14 @@ let currentSchoolProfileContext = null;
       const rowName = getRowName(view, row, rowIndex);
       const csvPoint = view.pointRows && view.pointRows[rowIndex] ? view.pointRows[rowIndex] : null;
 
-      if (csvPoint && Number.isFinite(csvPoint.lat) && Number.isFinite(csvPoint.lng)) {
+      if (csvPoint) {
         return {
           name: csvPoint.name || rowName,
-          lat: csvPoint.lat,
-          lng: csvPoint.lng,
+          lat: csvPoint.hasValidCoordinates === true && Number.isFinite(csvPoint.lat) ? csvPoint.lat : null,
+          lng: csvPoint.hasValidCoordinates === true && Number.isFinite(csvPoint.lng) ? csvPoint.lng : null,
           value: rowIndex + 1,
-          critical: rowIndex === 0
+          critical: rowIndex === 0,
+          hasValidCoordinates: csvPoint.hasValidCoordinates === true
         };
       }
 
@@ -4254,6 +4371,9 @@ let currentSchoolProfileContext = null;
         const markers = visibleRowIndexes.slice(start, start + MAP_MARKER_CHUNK_SIZE).map(function(originalIndex) {
           const row = view.rows[originalIndex];
           const point = getPointForRow(view, row, originalIndex);
+          if (!point || point.hasValidCoordinates === false || !Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) {
+            return null;
+          }
           const rowKey = getRowKey(point.name, originalIndex);
           const status = markerStatusForRow(view, row, originalIndex);
           const markerIcon = L.divIcon({
@@ -4287,7 +4407,7 @@ let currentSchoolProfileContext = null;
           return marker;
         });
 
-        markerClusterLayer.addLayers(markers);
+        markerClusterLayer.addLayers(markers.filter(Boolean));
         await yieldToBrowser();
       }
     }
