@@ -135,10 +135,12 @@ label span{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.12e
   line-height:1;
 }
 .select,.search,.button{width:100%;height:42px;border:2px solid var(--line);border-radius:14px;background:#fff;color:var(--navy);padding:10px 12px;font-family:var(--font);font-size:12px;font-weight:700;outline:none}
-.button{border:0;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}
+.button{border:0;background:var(--blue);color:#fff;font-family:var(--font-head);font-weight:800;cursor:pointer}
 .button:hover{background:var(--navy)}
 .button.secondary{background:var(--blue-100);color:var(--navy)}
 .button.secondary.active{background:var(--gold);color:var(--navy);box-shadow:inset 0 -3px 0 rgba(8,49,95,.16)}
+.button.outline{background:white;color:var(--navy);border:1.5px solid var(--line);box-shadow:none}
+.button.outline:hover{background:var(--blue-50);border-color:var(--blue-400)}
 .button:disabled{opacity:.45;cursor:not-allowed}
 .split-row{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
 .split-select{width:auto!important;min-width:130px;height:32px!important;padding:5px 9px!important;border:1.5px solid #DBEAFE!important;border-radius:999px!important;background:#F8FAFC!important;color:var(--navy)!important;font-size:11px!important;font-weight:800}
@@ -193,8 +195,9 @@ label span{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.12e
 .donut-layout td:first-child{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .donut-layout .dot{width:8px;height:8px;flex:0 0 auto}
 .donut-stack{position:relative;width:236px;height:236px;margin:auto;display:grid;place-items:center;animation:popIn .45s ease both}
-.donut{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;margin:auto;box-shadow:0 12px 24px rgba(8,49,95,.12);-webkit-mask:radial-gradient(circle at center,transparent 0 52%,#000 53%);mask:radial-gradient(circle at center,transparent 0 52%,#000 53%)}
-.donut-center{position:relative;z-index:1;width:112px;height:112px;border-radius:999px;background:transparent;display:grid;place-items:center;text-align:center;color:var(--navy);font-weight:800;font-size:13px;box-shadow:none;padding:8px;pointer-events:none}
+.donut{position:absolute;inset:0;width:100%;height:100%;margin:auto;border-radius:50%}
+.donut svg{width:100%;height:100%;transform:rotate(-90deg);border-radius:50%;overflow:visible}
+.donut-center{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--navy);font-weight:800;font-size:13px;pointer-events:none}
 .histogram{height:300px;display:grid;grid-template-columns:repeat(var(--cols,6),minmax(54px,1fr));gap:10px;align-items:end;padding:22px 8px 8px;border-left:2px solid #DBEAFE;border-bottom:2px solid #DBEAFE;background:linear-gradient(to top,#F8FAFC 1px,transparent 1px) 0 0/100% 20%;overflow-x:auto}
 .hist-col{height:100%;min-width:54px;display:grid;grid-template-rows:1fr auto;gap:8px}
 .hist-area{height:100%;display:flex;align-items:flex-end;justify-content:center}
@@ -340,8 +343,8 @@ h1,h2,h3,h4,.eyebrow,.kpi-number,.kpi-title,.button,.chart-toggle,.split-select,
               <p class="card-subtitle">Filter school sites, change the distribution breakdown, switch units, drill the charts, and reset the view.</p>
             </div>
             <div class="card-tools">
-              <button id="resetBtn" class="button secondary chart-toggle" type="button" style="padding-left:11px!important">Reset</button>
-              <button id="advancedToggle" class="button secondary active chart-toggle" type="button" style="padding-left:11px!important">Toggle Advanced Mode</button>
+              <button id="resetBtn" class="button" type="button" style="width:auto;min-width:88px">Reset</button>
+              <button id="advancedToggle" class="button secondary active" type="button" style="width:auto;min-width:160px">Toggle Advanced Mode</button>
             </div>
           </div>
           <div class="controls advanced-hidden" id="controlsGrid">
@@ -931,8 +934,8 @@ function tooltipHtml(data){
   return h;
 }
 function showBarTooltip(e,jsonStr){
-  let data;try{data=JSON.parse(jsonStr);}catch(err){return;}
-  barTooltip.innerHTML=tooltipHtml(data);barTooltip.classList.add("show");
+  let data;try{data=JSON.parse(jsonStr);}catch(err){}
+  barTooltip.innerHTML=data?tooltipHtml(data):jsonStr;barTooltip.classList.add("show");
   const pad=14;let x=e.clientX+pad,y=e.clientY-10;
   const rect=barTooltip.getBoundingClientRect();
   if(x+rect.width>window.innerWidth-8)x=e.clientX-rect.width-pad;
@@ -970,13 +973,20 @@ function renderConditionChart(rows){
   if(conditionChartMode==="histogram"){
     conditionChartToggle.textContent="Chart type: Histogram";conditionChartBody.className="histogram";conditionChartBody.style.setProperty("--cols",values.length);
     const max=Math.max(...values.map(v=>v.value),1);
-    conditionChartBody.innerHTML=values.map((v,idx)=>`<div class="hist-col" style="animation-delay:${idx*40}ms"><div class="hist-area"><div class="hist-wrap" style="height:${Math.max(v.value/max*100,8)}%"><div class="hist-value">${fmt(v.value)}</div><div class="hist-bar" style="height:calc(100% - 22px);background:${v.color}"></div></div></div><div class="hist-label">${escapeHtml(v.label)}</div></div>`).join("");
+    conditionChartBody.innerHTML=values.map((v,idx)=>{
+      const tooltip = `<h4>${escapeHtml(v.label)}</h4><div class="tt-row"><span class="dot" style="background:${v.color}"></span>Value<b>${fmt(v.value)}</b></div>`;
+      return `<div class="hist-col" style="animation-delay:${idx*40}ms; cursor:pointer;" data-tooltip="${escapeHtml(tooltip)}" onpointermove="showBarTooltip(event, this.getAttribute('data-tooltip'))" onpointerleave="hideBarTooltip()"><div class="hist-area"><div class="hist-wrap" style="height:${Math.max(v.value/max*100,8)}%"><div class="hist-value">${fmt(v.value)}</div><div class="hist-bar" style="height:calc(100% - 22px);background:${v.color}"></div></div></div><div class="hist-label">${escapeHtml(v.label)}</div></div>`;
+    }).join("");
     return;
   }
   conditionChartToggle.textContent="Chart type: Donut";conditionChartBody.className="donut-layout";
-  let start=0;const stops=values.map(v=>{const p=v.value/total*100;const s=`${v.color} ${start}% ${start+p}%`;start+=p;return s;});
+  let start=0;const radius = 15.91549430918954;
+  const svgContent=values.map(v=>{const p=total?v.value/total*100:0;const offset = 100 - start;start+=p;
+    const tooltip = `<h4>${escapeHtml(v.label)}</h4><div class="tt-row"><span class="dot" style="background:${v.color}"></span>Value<b>${fmt(v.value)}</b></div><div class="tt-row"><span class="dot" style="visibility:hidden"></span>Share<b>${total?Math.round(v.value/total*100):0}%</b></div>`;
+    return `<circle cx="21" cy="21" r="${radius}" fill="transparent" stroke="${v.color}" stroke-width="7" stroke-dasharray="${p} ${100-p}" stroke-dashoffset="${offset}" data-tooltip="${escapeHtml(tooltip)}" onpointermove="showBarTooltip(event, this.getAttribute('data-tooltip'))" onpointerleave="hideBarTooltip()" style="cursor:pointer;transition:stroke-width 0.15s ease" onmouseover="this.setAttribute('stroke-width', '8')" onmouseout="this.setAttribute('stroke-width', '7')"></circle>`;
+  }).join("");
   conditionChartBody.innerHTML=`
-    <div class="donut-stack"><div class="donut" style="background:conic-gradient(${stops.join(",")})"></div><div class="donut-center">${fmt(total)}<br>${isRecordUnit()?ENTITY.records:NUMERIC_FIELDS[0].unit}</div></div>
+    <div class="donut-stack"><div class="donut"><svg viewBox="0 0 42 42">${svgContent}</svg></div><div class="donut-center">${fmt(total)}<br>${isRecordUnit()?ENTITY.records:NUMERIC_FIELDS[0].unit}</div></div>
     <div class="table-wrap"><table><thead><tr><th>${escapeHtml(segLabel(varKey))}</th><th>Value</th><th>Share</th></tr></thead><tbody>
     ${values.map(v=>`<tr><td><span class="dot" style="background:${v.color};margin-right:7px"></span>${escapeHtml(v.label)}</td><td><b>${fmt(v.value)}</b></td><td><b>${pct(v.value/total*100)}</b></td></tr>`).join("")}
     </tbody></table></div>`;
@@ -996,14 +1006,21 @@ function renderIssueChart(rows){
   if(!items.length){issueHistogram.className="";issueHistogram.innerHTML=`<p class="card-subtitle">No values recorded in the current scope.</p>`;return;}
   if(issueChartMode==="donut"){
     issueChartToggle.textContent="Chart type: Donut";issueHistogram.className="donut-layout";
-    const total=Math.max(items.reduce((s,i)=>s+i.value,0),1);let start=0;
-    const stops=items.map(i=>{const p=i.value/total*100;const s=`${i.color} ${start}% ${start+p}%`;start+=p;return s;});
-    issueHistogram.innerHTML=`<div class="donut-stack"><div class="donut" style="background:conic-gradient(${stops.join(",")})"></div><div class="donut-center">${fmt(total)}<br>${escapeHtml(centerLabel)}</div></div><div class="table-wrap"><table><thead><tr><th>${escapeHtml(headerLabel)}</th><th>${escapeHtml(valueHeader)}</th><th>Share</th></tr></thead><tbody>${items.map(i=>`<tr><td><span class="dot" style="background:${i.color};margin-right:7px"></span>${escapeHtml(i.label)}</td><td><b>${fmt(i.value)}</b></td><td><b>${pct(i.value/total*100)}</b></td></tr>`).join("")}</tbody></table></div>`;
+    const total=Math.max(items.reduce((s,i)=>s+i.value,0),1);let start=0;const radius = 15.91549430918954;
+    const svgContent=items.map(i=>{
+      const p=total?i.value/total*100:0;const offset = 100 - start;start+=p;
+      const tooltip = `<h4>${escapeHtml(i.label)}</h4><div class="tt-row"><span class="dot" style="background:${i.color}"></span>Value<b>${fmt(i.value)}</b></div><div class="tt-row"><span class="dot" style="visibility:hidden"></span>Share<b>${total?Math.round(i.value/total*100):0}%</b></div>`;
+      return `<circle cx="21" cy="21" r="${radius}" fill="transparent" stroke="${i.color}" stroke-width="7" stroke-dasharray="${p} ${100-p}" stroke-dashoffset="${offset}" data-tooltip="${escapeHtml(tooltip)}" onpointermove="showBarTooltip(event, this.getAttribute('data-tooltip'))" onpointerleave="hideBarTooltip()" style="cursor:pointer;transition:stroke-width 0.15s ease" onmouseover="this.setAttribute('stroke-width', '8')" onmouseout="this.setAttribute('stroke-width', '7')"></circle>`;
+    }).join("");
+    issueHistogram.innerHTML=`<div class="donut-stack"><div class="donut"><svg viewBox="0 0 42 42">${svgContent}</svg></div><div class="donut-center">${fmt(total)}<br>${escapeHtml(centerLabel)}</div></div><div class="table-wrap"><table><thead><tr><th>${escapeHtml(headerLabel)}</th><th>${escapeHtml(valueHeader)}</th><th>Share</th></tr></thead><tbody>${items.map(i=>`<tr><td><span class="dot" style="background:${i.color};margin-right:7px"></span>${escapeHtml(i.label)}</td><td><b>${fmt(i.value)}</b></td><td><b>${pct(i.value/total*100)}</b></td></tr>`).join("")}</tbody></table></div>`;
     return;
   }
   issueChartToggle.textContent="Chart type: Histogram";issueHistogram.className="histogram";issueHistogram.style.setProperty("--cols",items.length);
   const max=Math.max(...items.map(i=>i.value),1);
-  issueHistogram.innerHTML=items.map((i,idx)=>`<div class="hist-col" style="animation-delay:${idx*40}ms"><div class="hist-area"><div class="hist-wrap" style="height:${Math.max(i.value/max*100,8)}%"><div class="hist-value">${fmt(i.value)}</div><div class="hist-bar" style="height:calc(100% - 22px);background:${i.color}"></div></div></div><div class="hist-label">${escapeHtml(i.label)}</div></div>`).join("");
+  issueHistogram.innerHTML=items.map((i,idx)=>{
+    const tooltip = `<h4>${escapeHtml(i.label)}</h4><div class="tt-row"><span class="dot" style="background:${i.color}"></span>Value<b>${fmt(i.value)}</b></div>`;
+    return `<div class="hist-col" style="animation-delay:${idx*40}ms; cursor:pointer;" data-tooltip="${escapeHtml(tooltip)}" onpointermove="showBarTooltip(event, this.getAttribute('data-tooltip'))" onpointerleave="hideBarTooltip()"><div class="hist-area"><div class="hist-wrap" style="height:${Math.max(i.value/max*100,8)}%"><div class="hist-value">${fmt(i.value)}</div><div class="hist-bar" style="height:calc(100% - 22px);background:${i.color}"></div></div></div><div class="hist-label">${escapeHtml(i.label)}</div></div>`;
+  }).join("");
 }
 
 /* ============================ TRAIL / DRILL ============================ */
@@ -1185,7 +1202,8 @@ advancedToggle.addEventListener("click",()=>{
   advancedMode=!advancedMode;
   controlsGrid.classList.toggle("advanced-hidden",!advancedMode);
   advancedToggle.textContent=advancedMode?"Toggle Basic Mode":"Toggle Advanced Mode";
-  advancedToggle.classList.toggle("active",!advancedMode);
+  advancedToggle.className=advancedMode?"button":"button secondary active";
+  resetBtn.className=advancedMode?"button outline":"button";
 });
 categoryPickerBtn.addEventListener("click",openCategoryModal);
 pickerSearch.addEventListener("input",()=>{clearTimeout(pickerSearch._t);pickerSearch._t=setTimeout(renderPickerList,140);});
@@ -1202,6 +1220,11 @@ resetBtn.addEventListener("click",()=>{
   distributionBy=DEFAULT_SEGMENT;splitBy={bar:DEFAULT_SEGMENT,comp:DEFAULT_SEGMENT,issue:DEFAULT_SEGMENT};
   categorySelections={};catFilterState={};heatSort={key:"__total__",dir:"desc"};
   recordSearch.value="";tableState.page=1;tableState.sortKey="level1";tableState.sortDirection="asc";tableState.filters={};
+  advancedMode=false;
+  controlsGrid.classList.add("advanced-hidden");
+  advancedToggle.textContent="Toggle Advanced Mode";
+  advancedToggle.className="button secondary active";
+  resetBtn.className="button";
   populateStaticControls();renderAll();
 });
 recordModal.addEventListener("click",e=>{if(e.target.id==="recordModal")closeRecordModal();});
