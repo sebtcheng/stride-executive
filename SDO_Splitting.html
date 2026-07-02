@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Quicksand:wght@600;700;800;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -33,8 +33,8 @@
       --red: #b91c1c;
       --green: #16a34a;
       --purple: #7c3aed;
-      --font-heading: Quicksand, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --font-body: "Comic Neue", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-heading: "Plus Jakarta Sans", "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-body: "DM Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       --radius: 22px;
     }
 
@@ -279,6 +279,7 @@
 
     .kpi {
       border-left: 8px solid var(--sky);
+      min-width: 0;
     }
 
     .kpi.gold {
@@ -308,9 +309,12 @@
 
     .kpi h2 {
       margin: 5px 0 2px;
-      font-size: 24px;
+      font-size: clamp(18px, 1.6vw, 28px);
+      line-height: 1.15;
       color: var(--navy);
       font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+      word-break: break-word;
       transition: color .18s ease, text-shadow .18s ease;
     }
 
@@ -683,13 +687,14 @@
 
     .donut-wrap {
       display: grid;
-      grid-template-columns: 3fr 1fr;
+      grid-template-columns: 1fr;
       gap: 10px;
       align-items: center;
+      justify-items: center;
     }
 
     .donut {
-      width: min(100%, 340px);
+      width: min(100%, 360px);
       aspect-ratio: 1 / 1;
       height: auto;
       border-radius: 50%;
@@ -697,8 +702,8 @@
       display: grid;
       place-items: center;
       position: relative;
-      background: white;
-      box-shadow: 0 14px 26px rgba(8, 49, 95, .14);
+      background: transparent;
+      box-shadow: none;
     }
 
     .donut svg {
@@ -724,14 +729,14 @@
       width: 42%;
       height: 42%;
       border-radius: 999px;
-      background: white;
+      background: transparent;
       display: grid;
       place-items: center;
       text-align: center;
       color: var(--navy);
       font-size: 14px;
       font-weight: 950;
-      box-shadow: 0 0 0 1px #e0f2fe;
+      box-shadow: none;
       position: relative;
       z-index: 2;
       pointer-events: none;
@@ -1716,12 +1721,14 @@
     }
 
     .hero small {
-      color: var(--gold);
+      color: var(--gold) !important;
       font-family: var(--font-heading);
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: .20em;
+      font-size: 10px !important;
+      font-weight: 800;
+      letter-spacing: .14em;
       text-transform: uppercase;
+      white-space: nowrap;
+      max-width: 100% !important;
     }
 
     .hero h1 {
@@ -1943,7 +1950,7 @@
 <body>
   <div class="wrap" id="top">
     <section class="hero">
-      <small>Department of Education | Bureau of Human Resource and Organizational Development</small>
+      <small>DEPARTMENT OF EDUCATION | HUMAN RESOURCE AND ORGANIZATIONAL DEVELOPMENT AND INFRASTRUCTURE</small>
       <h1>SDO Creation Dashboard</h1>
       <p>
         Interactive dashboard for mapping SDO size, school locations, district needs, staffing, enrollment, classrooms,
@@ -3536,7 +3543,7 @@
         return slice;
       });
 
-      donut.style.background = "white";
+      donut.style.background = "transparent";
 
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttribute("viewBox", "0 0 100 100");
@@ -4074,6 +4081,10 @@
         const button = document.createElement("button");
         button.className = "th-button";
         button.type = "button";
+        if (numericColumns.includes(column)) {
+          button.style.width = "100%";
+          button.style.justifyContent = "center";
+        }
         button.innerHTML = escapeHtml(column) + " <span>" + directionMark + "</span>";
         button.addEventListener("click", () => {
           if (sortState.column === column) {
@@ -4148,6 +4159,7 @@
         columns.forEach(column => {
           const td = document.createElement("td");
           td.textContent = row[column] || "";
+          if (numericColumns.includes(column)) td.style.textAlign = "center";
           if (column === "size") {
             const size = row.size || "Unspecified";
             td.innerHTML = '<span class="badge info" style="background:' + (sizeColors[size] || "#dbeafe") + '; color:white;">' + escapeHtml(size) + "</span>";
