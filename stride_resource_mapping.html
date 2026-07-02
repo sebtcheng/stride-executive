@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Quicksand:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" crossorigin="" />
@@ -31,8 +31,8 @@
       --text: #0F172A;
       --muted: #64748B;
       --line: #BAE6FD;
-      --font-heading: Quicksand, ui-sans-serif, system-ui, sans-serif;
-      --font-body: "Comic Neue", ui-sans-serif, system-ui, sans-serif;
+      --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
       --radius: 22px;
       --sidebar-width: 248px;
       --sidebar-collapsed-width: 78px;
@@ -907,6 +907,21 @@
       word-break: normal;
       white-space: normal;
       background: #fff;
+    }
+
+    th.num-col,
+    td.num-col {
+      text-align: center;
+    }
+
+    th.num-col .column-sort-button {
+      text-align: center;
+      -webkit-box-pack: center;
+      justify-content: center;
+    }
+
+    .num-col .column-filter-input {
+      text-align: center;
     }
 
     th {
@@ -2011,7 +2026,7 @@
       <div class="sidebar-label">Sections</div>
       <nav class="nav" aria-label="Dashboard sections">
         <button type="button" data-tab="teaching" data-icon="📚"><span class="nav-copy"><span class="nav-title">Teaching Deployment</span><span class="nav-desc">Teacher shortage, excess, filling-up rates, and school-level deployment.</span></span></button>
-        <button type="button" data-tab="nonTeaching" data-icon="🗂️"><span class="nav-copy"><span class="nav-title">Non-teaching Deployment</span><span class="nav-desc">AO II/PDO I coverage, clustering status, and plantilla details.</span></span></button>
+        <button type="button" data-tab="nonTeaching" data-icon="🗂️"><span class="nav-copy"><span class="nav-title">Non-teaching Deployment</span><span class="nav-desc">AO II and PDO I deployment coverage across schools.</span></span></button>
         <button type="button" data-tab="classrooms" data-icon="🏫"><span class="nav-copy"><span class="nav-title">Classrooms</span><span class="nav-desc">Enrolment, classroom inventory, requirements, shortage, and shifting.</span></span></button>
         <button type="button" data-tab="congestion" data-icon="📊" hidden>Congestion</button>
         <button type="button" data-tab="industries" data-icon="🏭" hidden>Industries (SHS)</button>
@@ -2233,11 +2248,11 @@
       nonTeaching: {
         schoolBased: true,
         nameField: ["school_name", "school name", "school"],
-        columns: ["School Name", "Clustering Status", "Plantilla Number"],
+        columns: ["School Name", "PDO I Deployment", "AO II Deployment"],
         fields: [
           ["school_name", "school name", "school"],
-          ["clustering_status", "clustering status"],
-          ["plantilla_number", "plantilla number"]
+          ["pdoi_deployment", "pdo i deployment"],
+          ["aoii_deployment", "ao ii deployment"]
         ]
       },
       classrooms: {
@@ -2740,25 +2755,23 @@
         metricTwoLabel: "Division Non-teaching Need",
         metricTwoValue: "39",
         kpis: [
-          ["932", "Reg Clustered AO II"],
-          ["1,564", "Reg Dedicated AO II"],
-          ["14", "Div Clustered AO II"],
-          ["26", "Div Dedicated AO II"]
+          ["--", "PDO I Deployment", "Percent of schools with PDO I deployed"],
+          ["--", "AO II Deployment", "Percent of schools with AO II deployed"]
         ],
         tableTitle: "Non-teaching Deployment School Data List",
         mapTitle: "Non-teaching Deployment Mapping",
-        columns: ["School Name", "AO II Deployment", "PDO I Deployment"],
+        columns: ["School Name", "PDO I Deployment", "AO II Deployment"],
         rows: [
-          ["Alaminos Central School", "Dedicated", "Without PDO I"],
-          ["Alos ES", "Dedicated", "Without PDO I"],
-          ["Amandiego ES", "Dedicated", "Without PDO I"],
-          ["Amangbangan ES", "Dedicated", "Without PDO I"],
-          ["Balangobong ES", "Dedicated", "Without PDO I"],
-          ["Balayang ES", "Dedicated", "Without PDO I"],
-          ["Baleyadaan ES", "Dedicated", "Without PDO I"],
-          ["Bisocol ES", "Dedicated", "Without PDO I"],
-          ["Bolaney ES", "Dedicated", "Without PDO I"],
-          ["Bued ES", "Clustered", "Without PDO I"]
+          ["Alaminos Central School", "1", "1"],
+          ["Alos ES", "0", "1"],
+          ["Amandiego ES", "0", "1"],
+          ["Amangbangan ES", "0", "1"],
+          ["Balangobong ES", "1", "1"],
+          ["Balayang ES", "0", "1"],
+          ["Baleyadaan ES", "0", "1"],
+          ["Bisocol ES", "0", "1"],
+          ["Bolaney ES", "0", "1"],
+          ["Bued ES", "0", "0"]
         ]
       },
       classrooms: {
@@ -3001,7 +3014,7 @@ let currentSchoolProfileContext = null;
         '<title>' + safeText(profileTitle) + '</title>' +
         '<link rel="preconnect" href="https://fonts.googleapis.com">' +
         '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
-        '<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Quicksand:wght@700;800;900&display=swap" rel="stylesheet">';
+        '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">';
 
       const downloadedStyle = downloadedDocument.createElement("style");
       downloadedStyle.textContent = getDashboardStyleText() + "\n" +
@@ -3367,17 +3380,30 @@ let currentSchoolProfileContext = null;
       const startRow = tablePageIndex * TABLE_PAGE_SIZE;
       const endRow = Math.min(startRow + TABLE_PAGE_SIZE, totalRows);
       const displayTable = buildDisplayTable(view, visibleRowIndexes, startRow, TABLE_PAGE_SIZE);
-      const headerHtml = displayTable.columns.map(function(column) {
+      const numericColumnFlags = displayTable.columns.map(function(_, columnIndex) {
+        let hasValue = false;
+        const allNumeric = displayTable.rows.every(function(row) {
+          const value = row[columnIndex];
+          if (isBlankCsvValue(value)) return true;
+          hasValue = true;
+          return parseSortNumber(value) !== null;
+        });
+        return hasValue && allNumeric;
+      });
+
+      const headerHtml = displayTable.columns.map(function(column, columnIndex) {
         const activeSort = column === tableSortColumn ? " " + (tableSortDirection === "asc" ? "▲" : "▼") : "";
         const filterValue = columnFilters[column] || "";
-        return '<th><button type="button" class="column-sort-button" data-column="' + safeText(column) + '">' + safeText(column + activeSort) + '</button><input class="column-filter-input" data-column="' + safeText(column) + '" type="search" value="' + safeText(filterValue) + '" placeholder="Filter..." autocomplete="off" /></th>';
+        const thClass = numericColumnFlags[columnIndex] ? ' class="num-col"' : "";
+        return '<th' + thClass + '><button type="button" class="column-sort-button" data-column="' + safeText(column) + '">' + safeText(column + activeSort) + '</button><input class="column-filter-input" data-column="' + safeText(column) + '" type="search" value="' + safeText(filterValue) + '" placeholder="Filter..." autocomplete="off" /></th>';
       }).join("");
 
       const rowsHtml = displayTable.rows.map(function(row, rowIndex) {
         const originalIndex = displayTable.originalIndexes[rowIndex];
         const rowKey = getRowKey(getRowName(view, view.rows[originalIndex], originalIndex), originalIndex);
-        const cellsHtml = row.map(function(cell) {
-          return "<td>" + safeText(cell) + "</td>";
+        const cellsHtml = row.map(function(cell, columnIndex) {
+          const tdClass = numericColumnFlags[columnIndex] ? ' class="num-col"' : "";
+          return "<td" + tdClass + ">" + safeText(cell) + "</td>";
         }).join("");
         return '<tr data-row-key="' + safeText(rowKey) + '" data-original-index="' + originalIndex + '">' + cellsHtml + "</tr>";
       }).join("");
@@ -3511,14 +3537,22 @@ let currentSchoolProfileContext = null;
 
       if (activeTabKey === "nonTeaching") {
         const sourceRecords = getUniqueSchoolRecords();
-        const regionalRecords = sourceRecords.filter(recordMatchesSelectedRegion);
-        const divisionRecords = sourceRecords.filter(recordMatchesSelectedDivision);
+        const filteredRecords = sourceRecords.filter(uniqueRecordPassesGeoFilters);
+        const totalSchools = filteredRecords.length;
+
+        const pdoiDeployed = filteredRecords.filter(function(record) {
+          return toNumber(getCsvValue(record, ["pdoi_deployment", "pdo i deployment"], "")) === 1;
+        }).length;
+        const aoiiDeployed = filteredRecords.filter(function(record) {
+          return toNumber(getCsvValue(record, ["aoii_deployment", "ao ii deployment"], "")) === 1;
+        }).length;
+
+        const pdoiPct = totalSchools ? formatRate(pdoiDeployed / totalSchools) : "--";
+        const aoiiPct = totalSchools ? formatRate(aoiiDeployed / totalSchools) : "--";
 
         return [
-          [countClusteringStatus(regionalRecords, "clustered"), "Reg Clustered AO II", "Count of clustered schools in selected region"],
-          [countClusteringStatus(regionalRecords, "dedicated"), "Reg Dedicated AO II", "Count of dedicated schools in selected region"],
-          [countClusteringStatus(divisionRecords, "clustered"), "Div Clustered AO II", "Count of clustered schools in selected division"],
-          [countClusteringStatus(divisionRecords, "dedicated"), "Div Dedicated AO II", "Count of dedicated schools in selected division"]
+          [pdoiPct, "PDO I Deployment", pdoiDeployed.toLocaleString() + " of " + totalSchools.toLocaleString() + " schools with PDO I deployed"],
+          [aoiiPct, "AO II Deployment", aoiiDeployed.toLocaleString() + " of " + totalSchools.toLocaleString() + " schools with AO II deployed"]
         ];
       }
 
@@ -3963,9 +3997,9 @@ let currentSchoolProfileContext = null;
         "<title>" + title + " | School Profile</title>",
         "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">",
         "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>",
-        "<link href=\"https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&family=Quicksand:wght@700;800;900&display=swap\" rel=\"stylesheet\">",
+        "<link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap\" rel=\"stylesheet\">",
         "<style>",
-        ":root{--navy:#08315F;--blue:#075985;--blue-600:#0284C7;--blue-100:#E0F2FE;--blue-50:#F0F9FF;--gold:#FBBF24;--text:#0F172A;--muted:#64748B;--line:#BAE6FD;--font-heading:Quicksand,ui-sans-serif,system-ui,sans-serif;--font-body:'Comic Neue',ui-sans-serif,system-ui,sans-serif;}",
+        ":root{--navy:#08315F;--blue:#075985;--blue-600:#0284C7;--blue-100:#E0F2FE;--blue-50:#F0F9FF;--gold:#FBBF24;--text:#0F172A;--muted:#64748B;--line:#BAE6FD;--font-heading:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;--font-body:'DM Sans',ui-sans-serif,system-ui,sans-serif;}",
         "*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}html{background:var(--blue-50);}body{margin:0;color:var(--text);font-family:var(--font-body);font-weight:700;background:radial-gradient(43.5% 49.5% at 10% 12%,rgba(7,89,133,.18) 0 34%,transparent 78%),radial-gradient(46.5% 54% at 92% 10%,rgba(251,191,36,.24) 0 36%,transparent 80%),var(--blue-50);}",
         ".profile{width:min(1000px,calc(100% - 40px));margin:28px auto;padding-bottom:28px;}",
         ".profile-hero{position:relative;overflow:hidden;border:3px solid color-mix(in srgb,var(--blue) 72%,var(--navy) 28%);border-radius:28px;background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;box-shadow:0 18px 42px rgba(15,23,42,.18);}",
@@ -4137,9 +4171,10 @@ let currentSchoolProfileContext = null;
       }
 
       if (activeTabKey === "nonTeaching") {
-        const combined = row.join(" ").toLowerCase();
-        const hasAo = combined.includes("dedicated") || combined.includes("clustered") || combined.includes("with ao");
-        const hasPdo = combined.includes("with pdo");
+        const pdoi = toNumber(valueByColumn(view, row, ["pdo i deployment"]));
+        const aoii = toNumber(valueByColumn(view, row, ["ao ii deployment"]));
+        const hasPdo = pdoi === 1;
+        const hasAo = aoii === 1;
 
         if (!hasAo && !hasPdo) return { className: "critical", label: "No AO II and PDO I" };
         if (hasAo && hasPdo) return { className: "success", label: "With AO II and PDO I" };
